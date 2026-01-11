@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Bewerbung bearbeiten' if application else 'Neue Bewerbung' }} - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-{% if application %}pencil-square{% else %}plus-circle{% endif %}"></i>
+        {{ 'Bewerbung bearbeiten' if application else 'Neue Bewerbung' }}
+    </h1>
+    <a href="{{ url_for('applications_list') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i>
+        Zurück zur Liste
+    </a>
+</div>
+
+<form method="POST" class="fade-in">
+    {{ form.hidden_tag() }}
+    
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="bi bi-building"></i>
+                Unternehmen & Position
+            </h2>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.company_name.label(class="form-label") }}
+                {{ form.company_name(class="form-control", placeholder="z.B. ENERTRAG AG") }}
+                {% for error in form.company_name.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                {{ form.job_title.label(class="form-label") }}
+                {{ form.job_title(class="form-control", placeholder="z.B. Projektmanager Windenergie") }}
+                {% for error in form.job_title.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.contact_person.label(class="form-label") }}
+                {{ form.contact_person(class="form-control", placeholder="z.B. Frau Müller") }}
+            </div>
+            <div class="form-group">
+                {{ form.source.label(class="form-label") }}
+                {{ form.source(class="form-control") }}
+            </div>
+        </div>
+        
+        <div class="form-group">
+            {{ form.company_address.label(class="form-label") }}
+            {{ form.company_address(class="form-control", rows="3", placeholder="Straße, PLZ Ort") }}
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.website.label(class="form-label") }}
+                {{ form.website(class="form-control", placeholder="https://www.beispiel.de") }}
+                {% for error in form.website.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                {{ form.job_url.label(class="form-label") }}
+                {{ form.job_url(class="form-control", placeholder="https://www.beispiel.de/jobs/123") }}
+                {% for error in form.job_url.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.location.label(class="form-label") }}
+                {{ form.location(class="form-control", placeholder="z.B. Berlin") }}
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 0.5rem;">
+                <div class="form-check">
+                    {{ form.remote_possible(class="form-check-input") }}
+                    {{ form.remote_possible.label(class="form-check-label") }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="bi bi-flag"></i>
+                Status & Feedback
+            </h2>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.status.label(class="form-label") }}
+                {{ form.status(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.sent_date.label(class="form-label") }}
+                {{ form.sent_date(class="form-control", type="date") }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.feedback.label(class="form-label") }}
+                {{ form.feedback(class="form-control") }}
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 0.5rem;">
+                <div class="form-check">
+                    {{ form.response_received(class="form-check-input") }}
+                    {{ form.response_received.label(class="form-check-label") }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="bi bi-currency-euro"></i>
+                Gehalt
+            </h2>
+        </div>
+        
+        <div class="form-group">
+            <div class="form-check">
+                {{ form.salary_expectation_given(class="form-check-input", id="salaryCheckbox") }}
+                {{ form.salary_expectation_given.label(class="form-check-label") }}
+            </div>
+        </div>
+        
+        <div class="form-row" id="salaryFields" style="{% if not form.salary_expectation_given.data %}opacity: 0.5; pointer-events: none;{% endif %}">
+            <div class="form-group">
+                {{ form.salary_amount.label(class="form-label") }}
+                {{ form.salary_amount(class="form-control", placeholder="z.B. 65000") }}
+                {% for error in form.salary_amount.errors %}
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+            <div class="form-group">
+                {{ form.salary_currency.label(class="form-label") }}
+                {{ form.salary_currency(class="form-control") }}
+            </div>
+            <div class="form-group">
+                {{ form.salary_period.label(class="form-label") }}
+                {{ form.salary_period(class="form-control") }}
+            </div>
+        </div>
+    </div>
+    
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="bi bi-journal-text"></i>
+                Notizen
+            </h2>
+        </div>
+        
+        <div class="form-group">
+            {{ form.notes(class="form-control", rows="3", placeholder="Eigene Notizen zur Bewerbung (max. 200 Zeichen)") }}
+            <span class="form-hint">
+                <span id="notesCount">{{ form.notes.data|length if form.notes.data else 0 }}</span>/200 Zeichen
+            </span>
+            {% for error in form.notes.errors %}
+            <span class="form-error">{{ error }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+        <a href="{{ url_for('applications_list') }}" class="btn btn-secondary">Abbrechen</a>
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
+
+{% if application %}
+<!-- Dokumente-Sektion (nur bei bestehenden Bewerbungen) -->
+<div class="card" style="margin-top: 2rem;">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="bi bi-file-earmark-pdf"></i>
+            Dokumente
+        </h2>
+    </div>
+    
+    <!-- Vorhandene Dokumente -->
+    {% if application.documents %}
+    <div style="margin-bottom: 1.5rem;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Dateiname</th>
+                    <th>Beschreibung</th>
+                    <th>Größe</th>
+                    <th>Hochgeladen</th>
+                    <th class="text-end">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in application.documents %}
+                <tr>
+                    <td>
+                        <i class="bi bi-file-earmark-{% if doc.filename.endswith('.pdf') %}pdf{% elif doc.filename.endswith(('.doc', '.docx')) %}word{% elif doc.filename.endswith(('.png', '.jpg', '.jpeg')) %}image{% else %}text{% endif %}"></i>
+                        {{ doc.filename }}
+                    </td>
+                    <td>{{ doc.description or '-' }}</td>
+                    <td>{{ (doc.file_size / 1024)|round(1) }} KB</td>
+                    <td>{{ doc.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td class="text-end">
+                        <a href="{{ url_for('view_document', document_id=doc.id) }}" 
+                           class="btn btn-sm btn-secondary" target="_blank" title="Ansehen">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{{ url_for('download_document', document_id=doc.id) }}" 
+                           class="btn btn-sm btn-secondary" title="Herunterladen">
+                            <i class="bi bi-download"></i>
+                        </a>
+                        <form action="{{ url_for('delete_document', document_id=doc.id) }}" 
+                              method="POST" style="display: inline;">
+                            {{ form.hidden_tag() }}
+                            <button type="submit" class="btn btn-sm btn-danger" 
+                                    onclick="return confirm('Dokument wirklich löschen?');" title="Löschen">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p style="color: var(--text-muted); padding: 1rem 0;">
+        Noch keine Dokumente hochgeladen.
+    </p>
+    {% endif %}
+    
+    <!-- Upload-Formular -->
+    <form action="{{ url_for('upload_document', application_id=application.id) }}" 
+          method="POST" enctype="multipart/form-data" class="upload-form">
+        {{ form.hidden_tag() }}
+        
+        <div class="form-row" style="align-items: flex-end;">
+            <div class="form-group" style="flex: 2;">
+                <label class="form-label">Dokument hochladen</label>
+                <input type="file" name="document" class="form-control" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" required>
+                <span class="form-hint">Erlaubte Formate: PDF, DOC, DOCX, PNG, JPG (max. 16 MB)</span>
+            </div>
+            <div class="form-group" style="flex: 2;">
+                <label class="form-label">Beschreibung (optional)</label>
+                <input type="text" name="description" class="form-control" placeholder="z.B. Stellenausschreibung">
+            </div>
+            <div class="form-group" style="flex: 0;">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-upload"></i>
+                    Hochladen
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle salary fields
+document.getElementById('salaryCheckbox').addEventListener('change', function() {
+    const salaryFields = document.getElementById('salaryFields');
+    if (this.checked) {
+        salaryFields.style.opacity = '1';
+        salaryFields.style.pointerEvents = 'auto';
+    } else {
+        salaryFields.style.opacity = '0.5';
+        salaryFields.style.pointerEvents = 'none';
+    }
+});
+
+// Notes character counter
+const notesField = document.querySelector('textarea[name="notes"]');
+const notesCount = document.getElementById('notesCount');
+
+if (notesField) {
+    notesField.addEventListener('input', function() {
+        notesCount.textContent = this.value.length;
+        if (this.value.length > 200) {
+            notesCount.style.color = 'var(--accent-danger)';
+        } else {
+            notesCount.style.color = 'inherit';
+        }
+    });
+}
+</script>
+{% endblock %}

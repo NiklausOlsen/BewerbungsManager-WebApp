@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Einstellungen - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-gear"></i>
+        Einstellungen
+    </h1>
+</div>
+
+<form method="POST" class="fade-in">
+    {{ form.hidden_tag() }}
+    
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+            <h2 class="card-title">
+                <i class="bi bi-person-badge"></i>
+                Ihre Kontaktdaten
+            </h2>
+        </div>
+        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+            Diese Daten werden automatisch im Textgenerator vorausgefüllt.
+        </p>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.your_name.label(class="form-label") }}
+                {{ form.your_name(class="form-control", placeholder="Max Mustermann") }}
+            </div>
+            <div class="form-group">
+                {{ form.your_email.label(class="form-label") }}
+                {{ form.your_email(class="form-control", placeholder="max@beispiel.de") }}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                {{ form.your_address.label(class="form-label") }}
+                {{ form.your_address(class="form-control", rows="3", placeholder="Musterstraße 1\n12345 Musterstadt") }}
+            </div>
+            <div class="form-group">
+                {{ form.your_phone.label(class="form-label") }}
+                {{ form.your_phone(class="form-control", placeholder="+49 123 456789") }}
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: flex-end;">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </div>
+</form>
+
+<div class="card fade-in" style="animation-delay: 0.1s;">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="bi bi-file-earmark-code"></i>
+            Bewerbungsvorlagen
+        </h2>
+        <a href="{{ url_for('template_new') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg"></i>
+            Neue Vorlage
+        </a>
+    </div>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+        Verwalte deine Bewerbungsvorlagen. Die Standard-Vorlage wird automatisch im Textgenerator geladen.
+    </p>
+    
+    {% if templates %}
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Beschreibung</th>
+                    <th>Standard</th>
+                    <th>Erstellt</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tpl in templates %}
+                <tr>
+                    <td>
+                        <strong>{{ tpl.name }}</strong>
+                    </td>
+                    <td>{{ tpl.description or '-' }}</td>
+                    <td>
+                        {% if tpl.is_default %}
+                        <span class="badge badge-offer">
+                            <i class="bi bi-star-fill"></i> Standard
+                        </span>
+                        {% else %}
+                        <span style="color: var(--text-muted);">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ tpl.created_at.strftime('%d.%m.%Y') if tpl.created_at else '-' }}</td>
+                    <td class="table-actions">
+                        <a href="{{ url_for('text_generator_page', template_id=tpl.id) }}" class="btn btn-secondary btn-icon" title="Im Generator öffnen">
+                            <i class="bi bi-lightning"></i>
+                        </a>
+                        <a href="{{ url_for('template_edit', id=tpl.id) }}" class="btn btn-secondary btn-icon" title="Bearbeiten">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button type="button" class="btn btn-danger btn-icon" title="Löschen" 
+                                onclick="confirmDeleteTemplate({{ tpl.id }}, '{{ tpl.name }}')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 2rem;">
+        <i class="bi bi-file-earmark-text" style="font-size: 3rem;"></i>
+        <h3>Noch keine Vorlagen</h3>
+        <p>Erstelle deine erste Bewerbungsvorlage.</p>
+        <a href="{{ url_for('template_new') }}" class="btn btn-primary" style="margin-top: 1rem;">
+            <i class="bi bi-plus-lg"></i>
+            Neue Vorlage
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-backdrop" id="deleteTemplateModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Vorlage löschen</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteTemplateModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Möchtest du die Vorlage <strong id="deleteTemplateName"></strong> wirklich löschen?</p>
+            <p style="color: var(--text-muted); margin-top: 0.5rem;">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteTemplateModal()">Abbrechen</button>
+            <form id="deleteTemplateForm" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i>
+                    Löschen
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDeleteTemplate(id, name) {
+    document.getElementById('deleteTemplateName').textContent = name;
+    document.getElementById('deleteTemplateForm').action = '/templates/' + id + '/delete';
+    document.getElementById('deleteTemplateModal').classList.add('active');
+}
+
+function closeDeleteTemplateModal() {
+    document.getElementById('deleteTemplateModal').classList.remove('active');
+}
+
+// Close modal on backdrop click
+document.getElementById('deleteTemplateModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteTemplateModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDeleteTemplateModal();
+    }
+});
+</script>
+{% endblock %}

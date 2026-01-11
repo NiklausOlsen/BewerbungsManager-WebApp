@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-speedometer2"></i>
+        Dashboard
+    </h1>
+    <a href="{{ url_for('application_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        Neue Bewerbung
+    </a>
+</div>
+
+<div class="stats-grid fade-in">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="bi bi-send"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.total }}</h4>
+            <p>Gesamt Bewerbungen</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon secondary">
+            <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.pending }}</h4>
+            <p>Ausstehend</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="bi bi-chat-dots"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.interviews }}</h4>
+            <p>Vorstellungsgespräche</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="bi bi-trophy"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.offers }}</h4>
+            <p>Angebote</p>
+        </div>
+    </div>
+</div>
+
+<div class="card fade-in" style="animation-delay: 0.1s;">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="bi bi-clock-history"></i>
+            Letzte Bewerbungen
+        </h2>
+        <a href="{{ url_for('applications_list') }}" class="btn btn-secondary btn-sm">
+            Alle anzeigen
+            <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+    
+    {% if recent_applications %}
+    <div class="table-container">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nr.</th>
+                    <th>Unternehmen</th>
+                    <th>Position</th>
+                    <th>Status</th>
+                    <th>Datum</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in recent_applications %}
+                <tr>
+                    <td>{{ app.id }}</td>
+                    <td>
+                        <strong>{{ app.company_name }}</strong>
+                        {% if app.location %}
+                        <br><small style="color: var(--text-muted);">{{ app.location }}</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ app.job_title }}</td>
+                    <td>
+                        <span class="badge badge-{{ app.status }}">
+                            {{ dict(app.STATUS_CHOICES).get(app.status, app.status) }}
+                        </span>
+                    </td>
+                    <td>{{ app.sent_date.strftime('%d.%m.%Y') if app.sent_date else '-' }}</td>
+                    <td class="table-actions">
+                        <a href="{{ url_for('application_edit', id=app.id) }}" class="btn btn-secondary btn-icon" title="Bearbeiten">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{{ url_for('text_generator_page', application_id=app.id) }}" class="btn btn-secondary btn-icon" title="Text generieren">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="bi bi-inbox"></i>
+        <h3>Noch keine Bewerbungen</h3>
+        <p>Erstelle deine erste Bewerbung, um loszulegen.</p>
+        <a href="{{ url_for('application_new') }}" class="btn btn-primary" style="margin-top: 1rem;">
+            <i class="bi bi-plus-lg"></i>
+            Neue Bewerbung
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Bewerbungen - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-table"></i>
+        Bewerbungen
+    </h1>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('export_csv') }}" class="btn btn-secondary">
+            <i class="bi bi-download"></i>
+            CSV Export
+        </a>
+        <a href="{{ url_for('application_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg"></i>
+            Neue Bewerbung
+        </a>
+    </div>
+</div>
+
+<form method="GET" class="filters fade-in">
+    <div class="filter-group">
+        <label class="filter-label">Status</label>
+        <select name="status" class="filter-control" onchange="this.form.submit()">
+            <option value="">Alle Status</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if request.args.get('status') == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="filter-group">
+        <label class="filter-label">Feedback</label>
+        <select name="feedback" class="filter-control" onchange="this.form.submit()">
+            <option value="">Alle</option>
+            {% for value, label in feedback_choices %}
+            <option value="{{ value }}" {% if request.args.get('feedback') == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="filter-group">
+        <label class="filter-label">Antwort</label>
+        <select name="response" class="filter-control" onchange="this.form.submit()">
+            <option value="">Alle</option>
+            <option value="yes" {% if request.args.get('response') == 'yes' %}selected{% endif %}>Erhalten</option>
+            <option value="no" {% if request.args.get('response') == 'no' %}selected{% endif %}>Ausstehend</option>
+        </select>
+    </div>
+    <div class="filter-group">
+        <label class="filter-label">Suche</label>
+        <input type="text" name="search" class="filter-control" placeholder="Unternehmen, Position..." 
+               value="{{ request.args.get('search', '') }}">
+    </div>
+    <div class="filter-group" style="align-self: flex-end;">
+        <button type="submit" class="btn btn-secondary btn-sm">
+            <i class="bi bi-search"></i>
+            Filtern
+        </button>
+        {% if request.args %}
+        <a href="{{ url_for('applications_list') }}" class="btn btn-secondary btn-sm" style="margin-left: 0.5rem;">
+            <i class="bi bi-x-lg"></i>
+            Reset
+        </a>
+        {% endif %}
+    </div>
+</form>
+
+{% if applications %}
+<div class="table-container fade-in" style="animation-delay: 0.1s;">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nr.</th>
+                <th>Unternehmen</th>
+                <th>Position</th>
+                <th>Status</th>
+                <th>Feedback</th>
+                <th>Versandt</th>
+                <th>Antwort</th>
+                <th>Quelle</th>
+                <th><i class="bi bi-paperclip" title="Dokumente"></i></th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for app in applications %}
+            <tr>
+                <td>{{ app.id }}</td>
+                <td>
+                    <strong>{{ app.company_name }}</strong>
+                    {% if app.location %}
+                    <br><small style="color: var(--text-muted);">
+                        <i class="bi bi-geo-alt"></i> {{ app.location }}
+                        {% if app.remote_possible %}<span class="badge badge-sent" style="margin-left: 0.25rem;">Remote</span>{% endif %}
+                    </small>
+                    {% endif %}
+                </td>
+                <td>
+                    {{ app.job_title }}
+                    {% if app.salary_expectation_given and app.salary_amount %}
+                    <br><small style="color: var(--accent-primary);">
+                        {{ "{:,.0f}".format(app.salary_amount) }} {{ app.salary_currency }}/{{ 'Jahr' if app.salary_period == 'year' else 'Monat' }}
+                    </small>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-{{ app.status }}">{{ dict(app.STATUS_CHOICES).get(app.status, app.status) }}</span></td>
+                <td><span class="badge badge-{{ app.feedback }}">{{ dict(app.FEEDBACK_CHOICES).get(app.feedback, app.feedback) }}</span></td>
+                <td>{{ app.sent_date.strftime('%d.%m.%Y') if app.sent_date else '-' }}</td>
+                <td>
+                    {% if app.response_received %}
+                    <i class="bi bi-check-circle-fill" style="color: var(--accent-success);"></i>
+                    {% else %}
+                    <i class="bi bi-clock" style="color: var(--text-muted);"></i>
+                    {% endif %}
+                </td>
+                <td>{{ dict(app.SOURCE_CHOICES).get(app.source, app.source or '-') }}</td>
+                <td>
+                    {% if app.documents|length > 0 %}
+                    <span title="{{ app.documents|length }} Dokument(e)">
+                        <i class="bi bi-paperclip" style="color: var(--accent-primary);"></i>
+                        {{ app.documents|length }}
+                    </span>
+                    {% else %}
+                    <span style="color: var(--text-muted);">-</span>
+                    {% endif %}
+                </td>
+                <td class="table-actions">
+                    <a href="{{ url_for('application_edit', id=app.id) }}" class="btn btn-secondary btn-icon" title="Bearbeiten">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{{ url_for('text_generator_page', application_id=app.id) }}" class="btn btn-secondary btn-icon" title="Text generieren">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </a>
+                    <button type="button" class="btn btn-danger btn-icon" title="Löschen" 
+                            onclick="confirmDelete({{ app.id }}, '{{ app.company_name }}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="card fade-in">
+    <div class="empty-state">
+        <i class="bi bi-search"></i>
+        <h3>Keine Bewerbungen gefunden</h3>
+        <p>{% if request.args %}Versuche andere Filterkriterien.{% else %}Erstelle deine erste Bewerbung, um loszulegen.{% endif %}</p>
+        {% if not request.args %}
+        <a href="{{ url_for('application_new') }}" class="btn btn-primary" style="margin-top: 1rem;">
+            <i class="bi bi-plus-lg"></i>
+            Neue Bewerbung
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-backdrop" id="deleteModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Bewerbung löschen</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Möchtest du die Bewerbung bei <strong id="deleteCompanyName"></strong> wirklich löschen?</p>
+            <p style="color: var(--text-muted); margin-top: 0.5rem;">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Abbrechen</button>
+            <form id="deleteForm" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-danger">
+                    <i class="bi bi-trash"></i>
+                    Löschen
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(id, companyName) {
+    document.getElementById('deleteCompanyName').textContent = companyName;
+    document.getElementById('deleteForm').action = '/applications/' + id + '/delete';
+    document.getElementById('deleteModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('active');
+}
+
+// Close modal on backdrop click
+document.getElementById('deleteModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeDeleteModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDeleteModal();
+    }
+});
+</script>
+{% endblock %}

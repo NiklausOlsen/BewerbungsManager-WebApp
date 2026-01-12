@@ -181,6 +181,20 @@
             background: rgba(239, 68, 68, 0.1);
         }
 
+        .nav-link-admin {
+            color: var(--accent-secondary);
+        }
+
+        .nav-link-admin:hover {
+            color: var(--accent-secondary);
+            background: rgba(124, 58, 237, 0.1);
+        }
+
+        .nav-link-admin.active {
+            color: var(--accent-secondary);
+            background: rgba(124, 58, 237, 0.15);
+        }
+
         /* Main Content */
         .main-content {
             max-width: 1400px;
@@ -833,6 +847,14 @@
                         Einstellungen
                     </a>
                 </li>
+                {% if current_user.is_admin %}
+                <li>
+                    <a href="{{ url_for('admin_users') }}" class="nav-link nav-link-admin {% if request.endpoint and request.endpoint.startswith('admin_') %}active{% endif %}">
+                        <i class="bi bi-shield-check"></i>
+                        Admin
+                    </a>
+                </li>
+                {% endif %}
                 <li class="nav-divider"></li>
                 <li>
                     <a href="{{ url_for('logout') }}" class="nav-link nav-link-logout">

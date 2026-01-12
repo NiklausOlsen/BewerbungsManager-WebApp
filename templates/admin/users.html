@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}Benutzerverwaltung - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-people"></i>
+        Benutzerverwaltung
+    </h1>
+    {% if pending_count > 0 %}
+    <span class="badge badge-pending-large">
+        <i class="bi bi-hourglass-split"></i>
+        {{ pending_count }} wartend
+    </span>
+    {% endif %}
+</div>
+
+<!-- Statistiken -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ users|length }}</h4>
+            <p>Benutzer gesamt</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="bi bi-check-circle"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ users|selectattr('is_active')|list|length }}</h4>
+            <p>Aktive Benutzer</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="bi bi-hourglass-split"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ pending_count }}</h4>
+            <p>Warten auf Freigabe</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon secondary">
+            <i class="bi bi-shield-check"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ users|selectattr('is_admin')|list|length }}</h4>
+            <p>Administratoren</p>
+        </div>
+    </div>
+</div>
+
+<!-- Wartende Benutzer (falls vorhanden) -->
+{% set pending_users = users|selectattr('is_active', 'false')|list %}
+{% if pending_users %}
+<div class="card" style="margin-bottom: 2rem; border-color: var(--accent-tertiary);">
+    <div class="card-header" style="background: rgba(245, 158, 11, 0.1);">
+        <h2 class="card-title" style="color: var(--accent-tertiary);">
+            <i class="bi bi-hourglass-split"></i>
+            Wartende Registrierungen
+        </h2>
+    </div>
+    <div class="table-container" style="border: none; border-radius: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>E-Mail</th>
+                    <th>Registriert am</th>
+                    <th class="text-end">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in pending_users %}
+                <tr>
+                    <td>
+                        <strong>{{ user.name or 'Kein Name' }}</strong>
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td class="table-actions" style="justify-content: flex-end;">
+                        <form action="{{ url_for('admin_activate_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success btn-sm" title="Freischalten">
+                                <i class="bi bi-check-lg"></i>
+                                Freischalten
+                            </button>
+                        </form>
+                        <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST" style="display: inline;" 
+                              onsubmit="return confirm('Benutzer wirklich ablehnen und löschen?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-danger btn-sm" title="Ablehnen">
+                                <i class="bi bi-x-lg"></i>
+                                Ablehnen
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Alle Benutzer -->
+<div class="card">
+    <div class="card-header">
+        <h2 class="card-title">
+            <i class="bi bi-list-ul"></i>
+            Alle Benutzer
+        </h2>
+    </div>
+    <div class="table-container" style="border: none; border-radius: 0;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>E-Mail</th>
+                    <th>Status</th>
+                    <th>Rolle</th>
+                    <th>Letzter Login</th>
+                    <th>Registriert</th>
+                    <th class="text-end">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr {% if user.id == current_user.id %}style="background: rgba(0, 212, 170, 0.05);"{% endif %}>
+                    <td>{{ user.id }}</td>
+                    <td>
+                        <strong>{{ user.name or 'Kein Name' }}</strong>
+                        {% if user.id == current_user.id %}
+                        <span class="badge badge-sent" style="margin-left: 0.5rem;">Sie</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.is_active %}
+                        <span class="badge badge-offer">
+                            <i class="bi bi-check-circle"></i>
+                            Aktiv
+                        </span>
+                        {% else %}
+                        <span class="badge badge-withdrawn">
+                            <i class="bi bi-hourglass-split"></i>
+                            Wartend
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if user.is_admin %}
+                        <span class="badge badge-interview">
+                            <i class="bi bi-shield-check"></i>
+                            Admin
+                        </span>
+                        {% else %}
+                        <span class="badge badge-draft">
+                            <i class="bi bi-person"></i>
+                            Benutzer
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else '-' }}</td>
+                    <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+                    <td class="table-actions" style="justify-content: flex-end;">
+                        {% if user.id != current_user.id %}
+                            {% if user.is_active %}
+                            <form action="{{ url_for('admin_deactivate_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-secondary btn-icon" title="Deaktivieren">
+                                    <i class="bi bi-pause-circle"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <form action="{{ url_for('admin_activate_user', user_id=user.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-success btn-icon" title="Aktivieren">
+                                    <i class="bi bi-play-circle"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            <form action="{{ url_for('admin_toggle_admin', user_id=user.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-secondary btn-icon" title="{{ 'Admin-Rechte entziehen' if user.is_admin else 'Zum Admin machen' }}">
+                                    <i class="bi bi-shield{% if user.is_admin %}-fill{% endif %}"></i>
+                                </button>
+                            </form>
+                            
+                            <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST" style="display: inline;"
+                                  onsubmit="return confirm('Benutzer {{ user.email }} wirklich löschen?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger btn-icon" title="Löschen">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        {% else %}
+                            <span style="color: var(--text-muted); font-size: 0.85rem;">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.btn-success {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--accent-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.btn-success:hover {
+    background: rgba(16, 185, 129, 0.3);
+}
+
+.badge-pending-large {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--accent-tertiary);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.text-end {
+    text-align: right;
+}
+
+.table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+</style>
+{% endblock %}

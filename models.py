@@ -14,7 +14,8 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(200), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(256), nullable=False)
     name = db.Column(db.String(200), nullable=True)
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=False)  # Neue Benutzer müssen erst freigeschaltet werden
+    is_admin = db.Column(db.Boolean, default=False)   # Admin-Rolle
     is_verified = db.Column(db.Boolean, default=False)
     verification_token = db.Column(db.String(100), nullable=True)
     
@@ -28,6 +29,13 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         """Passwort überprüfen"""
         return check_password_hash(self.password_hash, password)
+    
+    @property
+    def status_text(self):
+        """Status als Text"""
+        if not self.is_active:
+            return 'Wartend'
+        return 'Aktiv'
 
     def __repr__(self):
         return f'<User {self.email}>'

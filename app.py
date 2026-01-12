@@ -31,6 +31,7 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Bitte melden Sie sich an, um diese Seite zu sehen.'
 login_manager.login_message_category = 'info'
+login_manager.needs_refresh_message = None
 
 
 @login_manager.user_loader
@@ -73,16 +74,17 @@ def login():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         
         if user and user.check_password(form.password.data):
+            if not user.is_active:
+                flash('Ihr Konto wurde noch nicht freigeschaltet. Bitte warten Sie auf die Freigabe durch einen Administrator.', 'warning')
+                return render_template('auth/login.html', form=form)
+            
             login_user(user, remember=form.remember_me.data)
             user.last_login = datetime.utcnow()
             db.session.commit()
             
             flash('Erfolgreich angemeldet!', 'success')
             
-            # Redirect zur ursprünglich angeforderten Seite
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
+            # Immer zur Startseite weiterleiten (saubere URL)
             return redirect(url_for('index'))
         else:
             flash('Ungültige E-Mail oder Passwort.', 'error')
@@ -115,10 +117,100 @@ def register():
         db.session.add(user)
         db.session.commit()
         
-        flash('Registrierung erfolgreich! Sie können sich jetzt anmelden.', 'success')
+        # Prüfen ob dies der erste Benutzer ist (wird automatisch Admin)
+        if User.query.count() == 0:
+            user.is_admin = True
+            user.is_active = True
+        
+        flash('Registrierung erfolgreich! Ihr Konto muss erst von einem Administrator freigeschaltet werden.', 'info')
         return redirect(url_for('login'))
     
     return render_template('auth/register.html', form=form)
+
+
+# ============================================================================
+# Admin - Benutzerverwaltung
+# ============================================================================
+
+def admin_required(f):
+    """Decorator für Admin-only Routes"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('Sie haben keine Berechtigung für diese Seite.', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_users():
+    """Admin: Alle Benutzer anzeigen"""
+    users = User.query.order_by(User.created_at.desc()).all()
+    pending_count = User.query.filter_by(is_active=False).count()
+    return render_template('admin/users.html', users=users, pending_count=pending_count)
+
+
+@app.route('/admin/users/<int:user_id>/activate', methods=['POST'])
+@login_required
+@admin_required
+def admin_activate_user(user_id):
+    """Admin: Benutzer aktivieren"""
+    user = User.query.get_or_404(user_id)
+    user.is_active = True
+    db.session.commit()
+    flash(f'Benutzer {user.email} wurde aktiviert.', 'success')
+    return redirect(url_for('admin_users'))
+
+
+@app.route('/admin/users/<int:user_id>/deactivate', methods=['POST'])
+@login_required
+@admin_required
+def admin_deactivate_user(user_id):
+    """Admin: Benutzer deaktivieren"""
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Sie können sich nicht selbst deaktivieren.', 'error')
+        return redirect(url_for('admin_users'))
+    user.is_active = False
+    db.session.commit()
+    flash(f'Benutzer {user.email} wurde deaktiviert.', 'success')
+    return redirect(url_for('admin_users'))
+
+
+@app.route('/admin/users/<int:user_id>/toggle-admin', methods=['POST'])
+@login_required
+@admin_required
+def admin_toggle_admin(user_id):
+    """Admin: Admin-Rechte umschalten"""
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Sie können Ihre eigenen Admin-Rechte nicht entfernen.', 'error')
+        return redirect(url_for('admin_users'))
+    user.is_admin = not user.is_admin
+    status = 'Admin-Rechte erteilt' if user.is_admin else 'Admin-Rechte entzogen'
+    db.session.commit()
+    flash(f'{user.email}: {status}.', 'success')
+    return redirect(url_for('admin_users'))
+
+
+@app.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_user(user_id):
+    """Admin: Benutzer löschen"""
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash('Sie können sich nicht selbst löschen.', 'error')
+        return redirect(url_for('admin_users'))
+    email = user.email
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'Benutzer {email} wurde gelöscht.', 'success')
+    return redirect(url_for('admin_users'))
 
 
 @app.route('/logout')

@@ -11,6 +11,7 @@ from flask import (
     flash, jsonify, Response, send_file
 )
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_wtf.csrf import generate_csrf
 import uuid
 from werkzeug.utils import secure_filename
 from config import Config
@@ -38,6 +39,12 @@ login_manager.needs_refresh_message = None
 def load_user(user_id):
     """Lädt den Benutzer für Flask-Login"""
     return db.session.get(User, int(user_id))
+
+
+# CSRF Token für alle Templates verfügbar machen
+@app.context_processor
+def inject_csrf_token():
+    return dict(csrf_token=generate_csrf)
 
 
 # Create tables and instance folder
@@ -916,4 +923,4 @@ def export_csv():
 # ============================================================================
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

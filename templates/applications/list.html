@@ -68,17 +68,17 @@
 
 {% if applications %}
 <div class="table-container fade-in" style="animation-delay: 0.1s;">
-    <table class="table">
+    <table class="table sortable-table" id="applicationsTable">
         <thead>
             <tr>
-                <th>Nr.</th>
-                <th>Unternehmen</th>
-                <th>Position</th>
-                <th>Status</th>
-                <th>Feedback</th>
-                <th>Versandt</th>
-                <th>Antwort</th>
-                <th>Quelle</th>
+                <th class="sortable" data-sort="number" data-sort-default="asc">Nr. <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="string">Unternehmen <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="string">Position <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="string">Status <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="string">Feedback <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="date">Versandt <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="string">Antwort <i class="bi bi-arrow-down-up sort-icon"></i></th>
+                <th class="sortable" data-sort="string">Quelle <i class="bi bi-arrow-down-up sort-icon"></i></th>
                 <th><i class="bi bi-paperclip" title="Dokumente"></i></th>
                 <th>Aktionen</th>
             </tr>
@@ -183,6 +183,43 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.sortable:hover {
+    background: rgba(0, 212, 170, 0.1);
+}
+
+.sort-icon {
+    font-size: 0.75rem;
+    opacity: 0.4;
+    margin-left: 0.25rem;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.sortable:hover .sort-icon {
+    opacity: 0.7;
+}
+
+.sortable.sort-asc .sort-icon,
+.sortable.sort-desc .sort-icon {
+    opacity: 1;
+    color: var(--accent-primary);
+}
+
+.sortable.sort-asc .sort-icon::before {
+    content: "\F128"; /* bi-arrow-up */
+}
+
+.sortable.sort-desc .sort-icon::before {
+    content: "\F127"; /* bi-arrow-down */
+}
+</style>
+
 <script>
 function confirmDelete(id, companyName) {
     document.getElementById('deleteCompanyName').textContent = companyName;
@@ -206,6 +243,116 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeDeleteModal();
     }
+});
+
+// ============================================================================
+// Tabellen-Sortierung
+// ============================================================================
+
+class TableSorter {
+    constructor(tableId) {
+        this.table = document.getElementById(tableId);
+        if (!this.table) return;
+        
+        this.tbody = this.table.querySelector('tbody');
+        this.headers = this.table.querySelectorAll('th.sortable');
+        this.currentSort = { column: null, direction: 'asc' };
+        
+        this.init();
+    }
+    
+    init() {
+        this.headers.forEach((header, index) => {
+            header.addEventListener('click', () => this.sortByColumn(index, header));
+        });
+    }
+    
+    sortByColumn(columnIndex, header) {
+        const sortType = header.dataset.sort || 'string';
+        
+        // Richtung bestimmen
+        if (this.currentSort.column === columnIndex) {
+            this.currentSort.direction = this.currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.currentSort.column = columnIndex;
+            this.currentSort.direction = 'asc';
+        }
+        
+        // Header-Klassen aktualisieren
+        this.headers.forEach(h => h.classList.remove('sort-asc', 'sort-desc'));
+        header.classList.add(this.currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc');
+        
+        // Zeilen sortieren
+        const rows = Array.from(this.tbody.querySelectorAll('tr'));
+        
+        rows.sort((a, b) => {
+            const cellA = a.cells[columnIndex];
+            const cellB = b.cells[columnIndex];
+            
+            let valueA = this.getCellValue(cellA, sortType);
+            let valueB = this.getCellValue(cellB, sortType);
+            
+            let comparison = 0;
+            
+            if (sortType === 'number') {
+                comparison = valueA - valueB;
+            } else if (sortType === 'date') {
+                comparison = valueA - valueB;
+            } else {
+                comparison = valueA.localeCompare(valueB, 'de');
+            }
+            
+            return this.currentSort.direction === 'asc' ? comparison : -comparison;
+        });
+        
+        // Zeilen neu einfügen
+        rows.forEach(row => this.tbody.appendChild(row));
+        
+        // Nummerierung aktualisieren
+        this.updateRowNumbers();
+    }
+    
+    getCellValue(cell, sortType) {
+        const text = cell.textContent.trim();
+        
+        if (sortType === 'number') {
+            return parseInt(text) || 0;
+        }
+        
+        if (sortType === 'date') {
+            // Format: DD.MM.YYYY
+            if (text === '-' || !text) return 0;
+            const parts = text.split('.');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]).getTime();
+            }
+            return 0;
+        }
+        
+        // String: Ersten Text-Inhalt nehmen (für Badges etc.)
+        const strong = cell.querySelector('strong');
+        if (strong) return strong.textContent.trim().toLowerCase();
+        
+        const badge = cell.querySelector('.badge');
+        if (badge) return badge.textContent.trim().toLowerCase();
+        
+        return text.toLowerCase();
+    }
+    
+    updateRowNumbers() {
+        const rows = this.tbody.querySelectorAll('tr');
+        rows.forEach((row, index) => {
+            const firstCell = row.cells[0];
+            if (firstCell) {
+                firstCell.textContent = index + 1;
+            }
+        });
+    }
+}
+
+// Tabellen-Sortierer initialisieren
+document.addEventListener('DOMContentLoaded', function() {
+    new TableSorter('applicationsTable');
 });
 </script>
 {% endblock %}

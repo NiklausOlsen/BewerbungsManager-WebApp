@@ -91,6 +91,11 @@
 
     <!-- Benutzer Tab -->
     <div id="tab-users" class="tab-content active">
+        <div class="table-actions-bar">
+            <a href="{{ url_for('admin_export_table', table='users') }}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-download"></i> Benutzer exportieren (CSV)
+            </a>
+        </div>
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -137,6 +142,21 @@
 
     <!-- Bewerbungen Tab -->
     <div id="tab-applications" class="tab-content">
+        <div class="table-actions-bar">
+            <a href="{{ url_for('admin_export_table', table='applications') }}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-download"></i> Bewerbungen exportieren (CSV)
+            </a>
+            <a href="{{ url_for('admin_export_table', table='applications', format='json') }}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-download"></i> Bewerbungen exportieren (JSON)
+            </a>
+            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('importApplications').click()">
+                <i class="bi bi-upload"></i> Bewerbungen importieren
+            </button>
+            <form action="{{ url_for('admin_import_table', table='applications') }}" method="POST" enctype="multipart/form-data" style="display: none;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="file" id="importApplications" name="file" accept=".json,.csv" onchange="this.form.submit()">
+            </form>
+        </div>
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -180,6 +200,21 @@
 
     <!-- Vorlagen Tab -->
     <div id="tab-templates" class="tab-content">
+        <div class="table-actions-bar">
+            <a href="{{ url_for('admin_export_table', table='templates') }}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-download"></i> Vorlagen exportieren (CSV)
+            </a>
+            <a href="{{ url_for('admin_export_table', table='templates', format='json') }}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-download"></i> Vorlagen exportieren (JSON)
+            </a>
+            <button type="button" class="btn btn-sm btn-primary" onclick="document.getElementById('importTemplates').click()">
+                <i class="bi bi-upload"></i> Vorlagen importieren
+            </button>
+            <form action="{{ url_for('admin_import_table', table='templates') }}" method="POST" enctype="multipart/form-data" style="display: none;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="file" id="importTemplates" name="file" accept=".json,.csv" onchange="this.form.submit()">
+            </form>
+        </div>
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -216,6 +251,11 @@
 
     <!-- Anschreiben Tab -->
     <div id="tab-letters" class="tab-content">
+        <div class="table-actions-bar">
+            <a href="{{ url_for('admin_export_table', table='letters', format='json') }}" class="btn btn-sm btn-secondary">
+                <i class="bi bi-download"></i> Anschreiben exportieren (JSON)
+            </a>
+        </div>
         <div class="table-container">
             <table class="table">
                 <thead>
@@ -408,6 +448,16 @@
 
 .modal-body {
     padding: 1rem;
+}
+
+.table-actions-bar {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 </style>
 

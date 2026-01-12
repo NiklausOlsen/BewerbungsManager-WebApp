@@ -584,6 +584,205 @@ def admin_restore_deleted(id):
     return redirect(url_for('admin_database'))
 
 
+@app.route('/admin/export/<table>')
+@login_required
+@admin_required
+def admin_export_table(table):
+    """Admin: Einzelne Tabelle exportieren (CSV oder JSON)"""
+    format_type = request.args.get('format', 'csv')
+    
+    if table == 'users':
+        data = []
+        for user in User.query.all():
+            data.append({
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'is_active': user.is_active,
+                'is_admin': user.is_admin,
+                'created_at': user.created_at.isoformat() if user.created_at else None,
+                'last_login': user.last_login.isoformat() if user.last_login else None
+            })
+        filename = f'benutzer_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        
+    elif table == 'applications':
+        data = []
+        for app in Application.query.all():
+            data.append({
+                'id': app.id,
+                'user_id': app.user_id,
+                'company_name': app.company_name,
+                'job_title': app.job_title,
+                'sent_date': app.sent_date.isoformat() if app.sent_date else None,
+                'status': app.status,
+                'feedback': app.feedback,
+                'response_received': app.response_received,
+                'salary_expectation_given': app.salary_expectation_given,
+                'salary_amount': float(app.salary_amount) if app.salary_amount else None,
+                'salary_currency': app.salary_currency,
+                'salary_period': app.salary_period,
+                'contact_person': app.contact_person,
+                'company_address': app.company_address,
+                'website': app.website,
+                'job_url': app.job_url,
+                'location': app.location,
+                'remote_possible': app.remote_possible,
+                'source': app.source,
+                'notes': app.notes,
+                'is_deleted': app.is_deleted,
+                'created_at': app.created_at.isoformat() if app.created_at else None
+            })
+        filename = f'bewerbungen_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        
+    elif table == 'templates':
+        data = []
+        for tpl in Template.query.all():
+            data.append({
+                'id': tpl.id,
+                'user_id': tpl.user_id,
+                'name': tpl.name,
+                'description': tpl.description,
+                'content': tpl.content,
+                'is_default': tpl.is_default,
+                'created_at': tpl.created_at.isoformat() if tpl.created_at else None
+            })
+        filename = f'vorlagen_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        
+    elif table == 'letters':
+        data = []
+        for letter in Letter.query.all():
+            data.append({
+                'id': letter.id,
+                'application_id': letter.application_id,
+                'template_used': letter.template_used,
+                'rendered_text': letter.rendered_text,
+                'created_at': letter.created_at.isoformat() if letter.created_at else None
+            })
+        filename = f'anschreiben_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        
+    else:
+        flash('Unbekannte Tabelle!', 'error')
+        return redirect(url_for('admin_database'))
+    
+    if format_type == 'json':
+        output = json.dumps(data, ensure_ascii=False, indent=2)
+        return Response(
+            output,
+            mimetype='application/json',
+            headers={'Content-Disposition': f'attachment; filename={filename}.json'}
+        )
+    else:
+        # CSV Export
+        if not data:
+            flash('Keine Daten zum Exportieren!', 'warning')
+            return redirect(url_for('admin_database'))
+        
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=data[0].keys(), delimiter=';')
+        writer.writeheader()
+        writer.writerows(data)
+        output.seek(0)
+        
+        return Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename={filename}.csv'}
+        )
+
+
+@app.route('/admin/import/<table>', methods=['POST'])
+@login_required
+@admin_required
+def admin_import_table(table):
+    """Admin: Einzelne Tabelle importieren (CSV oder JSON)"""
+    if 'file' not in request.files:
+        flash('Keine Datei ausgewählt!', 'error')
+        return redirect(url_for('admin_database'))
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('Keine Datei ausgewählt!', 'error')
+        return redirect(url_for('admin_database'))
+    
+    try:
+        # Dateiformat erkennen
+        if file.filename.endswith('.json'):
+            data = json.load(file)
+        elif file.filename.endswith('.csv'):
+            content = file.read().decode('utf-8')
+            reader = csv.DictReader(io.StringIO(content), delimiter=';')
+            data = list(reader)
+        else:
+            flash('Nur JSON oder CSV Dateien sind erlaubt!', 'error')
+            return redirect(url_for('admin_database'))
+        
+        imported_count = 0
+        
+        if table == 'applications':
+            for row in data:
+                # Prüfen ob bereits existiert
+                existing = Application.query.filter_by(
+                    company_name=row.get('company_name'),
+                    job_title=row.get('job_title')
+                ).first()
+                
+                if not existing:
+                    app = Application(
+                        user_id=row.get('user_id') or current_user.id,
+                        company_name=row.get('company_name'),
+                        job_title=row.get('job_title'),
+                        status=row.get('status', 'draft'),
+                        feedback=row.get('feedback', 'unknown'),
+                        response_received=str(row.get('response_received', 'False')).lower() in ('true', '1', 'ja'),
+                        salary_expectation_given=str(row.get('salary_expectation_given', 'False')).lower() in ('true', '1', 'ja'),
+                        salary_amount=float(row['salary_amount']) if row.get('salary_amount') else None,
+                        salary_currency=row.get('salary_currency', 'EUR'),
+                        salary_period=row.get('salary_period', 'year'),
+                        contact_person=row.get('contact_person'),
+                        company_address=row.get('company_address'),
+                        website=row.get('website'),
+                        job_url=row.get('job_url'),
+                        location=row.get('location'),
+                        remote_possible=str(row.get('remote_possible', 'False')).lower() in ('true', '1', 'ja'),
+                        source=row.get('source'),
+                        notes=row.get('notes')
+                    )
+                    if row.get('sent_date') and row['sent_date'] != 'None':
+                        try:
+                            app.sent_date = datetime.fromisoformat(row['sent_date']).date()
+                        except:
+                            pass
+                    db.session.add(app)
+                    imported_count += 1
+                    
+        elif table == 'templates':
+            for row in data:
+                existing = Template.query.filter_by(name=row.get('name')).first()
+                
+                if not existing:
+                    tpl = Template(
+                        user_id=row.get('user_id') or current_user.id,
+                        name=row.get('name'),
+                        description=row.get('description'),
+                        content=row.get('content'),
+                        is_default=str(row.get('is_default', 'False')).lower() in ('true', '1', 'ja')
+                    )
+                    db.session.add(tpl)
+                    imported_count += 1
+        else:
+            flash('Import für diese Tabelle nicht unterstützt!', 'error')
+            return redirect(url_for('admin_database'))
+        
+        db.session.commit()
+        flash(f'{imported_count} Einträge erfolgreich importiert!', 'success')
+        
+    except Exception as e:
+        flash(f'Fehler beim Import: {str(e)}', 'error')
+        db.session.rollback()
+    
+    return redirect(url_for('admin_database'))
+
+
 @app.route('/logout')
 @login_required
 def logout():

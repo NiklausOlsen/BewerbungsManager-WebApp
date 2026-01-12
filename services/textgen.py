@@ -3,7 +3,7 @@ Textgenerator Service für Bewerbungsanschreiben
 Verwendet Jinja2 für sicheres Template-Rendering
 """
 from datetime import date
-from jinja2 import Environment, BaseLoader, select_autoescape, UndefinedError
+from jinja2 import Environment, BaseLoader, UndefinedError
 from jinja2.sandbox import SandboxedEnvironment
 
 
@@ -49,9 +49,10 @@ Mit freundlichen Grüßen
 
     def __init__(self):
         # Sandboxed Environment für sichere Template-Verarbeitung
+        # autoescape=False da wir Plaintext generieren, nicht HTML
         self.env = SandboxedEnvironment(
             loader=BaseLoader(),
-            autoescape=select_autoescape(['html', 'xml']),
+            autoescape=False,
             trim_blocks=True,
             lstrip_blocks=True
         )

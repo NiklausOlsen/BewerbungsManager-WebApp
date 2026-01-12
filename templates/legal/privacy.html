@@ -18,9 +18,11 @@
     <div class="legal-content card">
         <section class="legal-section">
             <h2>1. Verantwortlicher</h2>
-            <p>
-                Verantwortlich für die Datenverarbeitung auf dieser Website ist:<br><br>
-                <strong>Niklaus Olsen</strong><br>
+            <p>Verantwortlich für die Datenverarbeitung auf dieser Website ist:</p>
+            <div class="address-image">
+                <img src="{{ url_for('static', filename='images/address.png') }}" alt="Kontaktadresse" loading="lazy">
+            </div>
+            <p style="margin-top: 1rem;">
                 E-Mail: niklausolsen@gmail.com
             </p>
         </section>
@@ -229,6 +231,18 @@
         font-style: italic;
         color: var(--text-muted) !important;
         font-size: 0.85rem;
+    }
+
+    .address-image {
+        margin: 1rem 0;
+    }
+
+    .address-image img {
+        max-width: 300px;
+        height: auto;
+        border-radius: var(--radius-sm);
+        background: var(--bg-tertiary);
+        padding: 1rem;
     }
 </style>
 {% endblock %}

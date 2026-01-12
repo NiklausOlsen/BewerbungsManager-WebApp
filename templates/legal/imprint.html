@@ -2,6 +2,10 @@
 
 {% block title %}Impressum - BewerbungsManager{% endblock %}
 
+{% block head %}
+<meta name="robots" content="noindex, nofollow">
+{% endblock %}
+
 {% block content %}
 <div class="legal-page fade-in">
     <div class="legal-header">
@@ -14,11 +18,9 @@
     <div class="legal-content card">
         <section class="legal-section">
             <h2>Angaben gemäß § 5 TMG</h2>
-            <p>
-                <strong>Niklaus Olsen</strong><br>
-                Taruper Hauptstr. 164<br>
-                24943 Flensburg
-            </p>
+            <div class="address-image">
+                <img src="{{ url_for('static', filename='images/address.png') }}" alt="Kontaktadresse" loading="lazy">
+            </div>
         </section>
 
         <section class="legal-section">
@@ -30,10 +32,10 @@
 
         <section class="legal-section">
             <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
-            <p>
-                <strong>Niklaus Olsen</strong><br>
-                Taruper Hauptstr. 164<br>
-                24943 Flensburg<br>
+            <div class="address-image">
+                <img src="{{ url_for('static', filename='images/address.png') }}" alt="Kontaktadresse" loading="lazy">
+            </div>
+            <p style="margin-top: 1rem;">
                 E-Mail: niklausolsen@gmail.com
             </p>
         </section>
@@ -151,6 +153,18 @@
 
     .legal-section a:hover {
         text-decoration: underline;
+    }
+
+    .address-image {
+        margin: 1rem 0;
+    }
+
+    .address-image img {
+        max-width: 300px;
+        height: auto;
+        border-radius: var(--radius-sm);
+        background: var(--bg-tertiary);
+        padding: 1rem;
     }
 </style>
 {% endblock %}

@@ -1,9 +1,9 @@
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField, TextAreaField, DateField, BooleanField, 
-    DecimalField, SelectField, URLField, SubmitField
+    DecimalField, SelectField, URLField, SubmitField, PasswordField
 )
-from wtforms.validators import DataRequired, Length, Optional, URL, ValidationError
+from wtforms.validators import DataRequired, Length, Optional, URL, ValidationError, Email, EqualTo
 
 
 class ApplicationForm(FlaskForm):
@@ -140,3 +140,41 @@ class TemplateForm(FlaskForm):
     is_default = BooleanField('Als Standard-Vorlage verwenden')
     
     submit = SubmitField('Speichern')
+
+
+class LoginForm(FlaskForm):
+    """Login-Formular"""
+    
+    email = StringField('E-Mail', validators=[
+        DataRequired(message='E-Mail ist erforderlich'),
+        Email(message='Bitte gültige E-Mail-Adresse eingeben')
+    ])
+    password = PasswordField('Passwort', validators=[
+        DataRequired(message='Passwort ist erforderlich')
+    ])
+    remember_me = BooleanField('Angemeldet bleiben')
+    
+    submit = SubmitField('Anmelden')
+
+
+class RegisterForm(FlaskForm):
+    """Registrierungs-Formular"""
+    
+    name = StringField('Name', validators=[
+        DataRequired(message='Name ist erforderlich'),
+        Length(min=2, max=200, message='Name muss zwischen 2 und 200 Zeichen haben')
+    ])
+    email = StringField('E-Mail', validators=[
+        DataRequired(message='E-Mail ist erforderlich'),
+        Email(message='Bitte gültige E-Mail-Adresse eingeben')
+    ])
+    password = PasswordField('Passwort', validators=[
+        DataRequired(message='Passwort ist erforderlich'),
+        Length(min=8, message='Passwort muss mindestens 8 Zeichen haben')
+    ])
+    password_confirm = PasswordField('Passwort bestätigen', validators=[
+        DataRequired(message='Passwort-Bestätigung ist erforderlich'),
+        EqualTo('password', message='Passwörter müssen übereinstimmen')
+    ])
+    
+    submit = SubmitField('Registrieren')

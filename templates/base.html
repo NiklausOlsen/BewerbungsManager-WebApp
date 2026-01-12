@@ -165,6 +165,22 @@
             font-size: 1.1rem;
         }
 
+        .nav-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--border-color);
+            margin: 0 0.5rem;
+        }
+
+        .nav-link-logout {
+            color: var(--text-muted);
+        }
+
+        .nav-link-logout:hover {
+            color: var(--accent-danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
         /* Main Content */
         .main-content {
             max-width: 1400px;
@@ -791,6 +807,7 @@
     </style>
 </head>
 <body>
+    {% if current_user.is_authenticated %}
     <nav class="navbar">
         <div class="navbar-container">
             <a href="{{ url_for('index') }}" class="navbar-brand">
@@ -816,9 +833,17 @@
                         Einstellungen
                     </a>
                 </li>
+                <li class="nav-divider"></li>
+                <li>
+                    <a href="{{ url_for('logout') }}" class="nav-link nav-link-logout">
+                        <i class="bi bi-box-arrow-right"></i>
+                        Abmelden
+                    </a>
+                </li>
             </ul>
         </div>
     </nav>
+    {% endif %}
 
     <main class="main-content">
         {% with messages = get_flashed_messages(with_categories=true) %}

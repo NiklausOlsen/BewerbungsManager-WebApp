@@ -10,11 +10,12 @@ from flask import (
     Flask, render_template, request, redirect, url_for, 
     flash, jsonify, Response, send_file
 )
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 import uuid
 from werkzeug.utils import secure_filename
 from config import Config
-from models import db, Application, UserSettings, Letter, Template, Document
-from forms import ApplicationForm, TextGeneratorForm, UserSettingsForm, TemplateForm
+from models import db, Application, UserSettings, Letter, Template, Document, User
+from forms import ApplicationForm, TextGeneratorForm, UserSettingsForm, TemplateForm, LoginForm, RegisterForm
 from services.textgen import text_generator, TextGenerator
 from services.pdfgen import pdf_generator, generate_filename
 
@@ -23,6 +24,20 @@ app.config.from_object(Config)
 
 # Initialize database
 db.init_app(app)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message = 'Bitte melden Sie sich an, um diese Seite zu sehen.'
+login_manager.login_message_category = 'info'
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    """Lädt den Benutzer für Flask-Login"""
+    return db.session.get(User, int(user_id))
+
 
 # Create tables and instance folder
 with app.app_context():
@@ -43,10 +58,84 @@ def allowed_file(filename):
 
 
 # ============================================================================
+# Authentication
+# ============================================================================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Login-Seite"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = LoginForm()
+    
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data.lower()).first()
+        
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember_me.data)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            flash('Erfolgreich angemeldet!', 'success')
+            
+            # Redirect zur ursprünglich angeforderten Seite
+            next_page = request.args.get('next')
+            if next_page:
+                return redirect(next_page)
+            return redirect(url_for('index'))
+        else:
+            flash('Ungültige E-Mail oder Passwort.', 'error')
+    
+    return render_template('auth/login.html', form=form)
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """Registrierungs-Seite"""
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    form = RegisterForm()
+    
+    if form.validate_on_submit():
+        # Prüfen ob E-Mail bereits existiert
+        existing_user = User.query.filter_by(email=form.email.data.lower()).first()
+        if existing_user:
+            flash('Diese E-Mail-Adresse ist bereits registriert.', 'error')
+            return render_template('auth/register.html', form=form)
+        
+        # Neuen Benutzer erstellen
+        user = User(
+            email=form.email.data.lower(),
+            name=form.name.data
+        )
+        user.set_password(form.password.data)
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registrierung erfolgreich! Sie können sich jetzt anmelden.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('auth/register.html', form=form)
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    """Benutzer abmelden"""
+    logout_user()
+    flash('Sie wurden erfolgreich abgemeldet.', 'success')
+    return redirect(url_for('login'))
+
+
+# ============================================================================
 # Dashboard / Index
 # ============================================================================
 
 @app.route('/')
+@login_required
 def index():
     """Dashboard mit Statistiken und letzten Bewerbungen"""
     stats = {
@@ -67,6 +156,7 @@ def index():
 # ============================================================================
 
 @app.route('/applications')
+@login_required
 def applications_list():
     """Liste aller Bewerbungen mit Filtern"""
     query = Application.query
@@ -112,6 +202,7 @@ def applications_list():
 
 
 @app.route('/applications/new', methods=['GET', 'POST'])
+@login_required
 def application_new():
     """Neue Bewerbung erstellen"""
     form = ApplicationForm()
@@ -147,6 +238,7 @@ def application_new():
 
 
 @app.route('/applications/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def application_edit(id):
     """Bewerbung bearbeiten"""
     application = Application.query.get_or_404(id)
@@ -181,6 +273,7 @@ def application_edit(id):
 
 
 @app.route('/applications/<int:id>/delete', methods=['POST'])
+@login_required
 def application_delete(id):
     """Bewerbung löschen"""
     application = Application.query.get_or_404(id)
@@ -200,6 +293,7 @@ def application_delete(id):
 # ============================================================================
 
 @app.route('/generator')
+@login_required
 def text_generator_page():
     """Textgenerator Seite"""
     application = None
@@ -249,6 +343,7 @@ def text_generator_page():
 
 
 @app.route('/api/generate', methods=['POST'])
+@login_required
 def api_generate():
     """API-Endpunkt für Textgenerierung"""
     data = request.get_json()
@@ -289,6 +384,7 @@ def api_generate():
 
 
 @app.route('/api/letters', methods=['POST'])
+@login_required
 def api_save_letter():
     """API-Endpunkt zum Speichern eines generierten Anschreibens"""
     data = request.get_json()
@@ -316,6 +412,7 @@ def api_save_letter():
 
 
 @app.route('/api/save-draft', methods=['POST'])
+@login_required
 def api_save_draft():
     """API-Endpunkt zum Speichern einer neuen Bewerbung als Entwurf"""
     data = request.get_json()
@@ -364,6 +461,7 @@ def api_save_draft():
 
 
 @app.route('/api/export-pdf', methods=['POST'])
+@login_required
 def api_export_pdf():
     """API-Endpunkt zum Exportieren des generierten Textes als DIN-Brief PDF"""
     data = request.get_json()
@@ -413,6 +511,7 @@ def api_export_pdf():
 # ============================================================================
 
 @app.route('/applications/<int:application_id>/documents', methods=['POST'])
+@login_required
 def upload_document(application_id):
     """Dokument zu einer Bewerbung hochladen"""
     application = db.session.get(Application, application_id)
@@ -464,6 +563,7 @@ def upload_document(application_id):
 
 
 @app.route('/documents/<int:document_id>')
+@login_required
 def download_document(document_id):
     """Dokument herunterladen"""
     document = db.session.get(Document, document_id)
@@ -485,6 +585,7 @@ def download_document(document_id):
 
 
 @app.route('/documents/<int:document_id>/view')
+@login_required
 def view_document(document_id):
     """Dokument im Browser anzeigen (für PDFs)"""
     document = db.session.get(Document, document_id)
@@ -506,6 +607,7 @@ def view_document(document_id):
 
 
 @app.route('/documents/<int:document_id>/delete', methods=['POST'])
+@login_required
 def delete_document(document_id):
     """Dokument löschen"""
     document = db.session.get(Document, document_id)
@@ -533,6 +635,7 @@ def delete_document(document_id):
 # ============================================================================
 
 @app.route('/settings', methods=['GET', 'POST'])
+@login_required
 def settings():
     """Benutzereinstellungen"""
     user_settings = UserSettings.query.first()
@@ -566,6 +669,7 @@ def settings():
 # ============================================================================
 
 @app.route('/templates/new', methods=['GET', 'POST'])
+@login_required
 def template_new():
     """Neue Vorlage erstellen"""
     form = TemplateForm()
@@ -594,6 +698,7 @@ def template_new():
 
 
 @app.route('/templates/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def template_edit(id):
     """Vorlage bearbeiten"""
     template = Template.query.get_or_404(id)
@@ -621,6 +726,7 @@ def template_edit(id):
 
 
 @app.route('/templates/<int:id>/delete', methods=['POST'])
+@login_required
 def template_delete(id):
     """Vorlage löschen"""
     template = Template.query.get_or_404(id)
@@ -633,6 +739,7 @@ def template_delete(id):
 
 
 @app.route('/api/templates/<int:id>')
+@login_required
 def api_get_template(id):
     """API-Endpunkt zum Abrufen einer Vorlage"""
     template = Template.query.get_or_404(id)
@@ -653,6 +760,7 @@ def api_get_template(id):
 # ============================================================================
 
 @app.route('/export/csv')
+@login_required
 def export_csv():
     """Exportiert alle Bewerbungen als CSV"""
     applications = Application.query.order_by(Application.id).all()

@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Registrieren - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card fade-in">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-person-plus-fill"></i>
+            </div>
+            <h1>Konto erstellen</h1>
+            <p>Registrieren Sie sich für den BewerbungsManager</p>
+        </div>
+
+        <form method="POST" class="auth-form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                <label class="form-label" for="name">
+                    <i class="bi bi-person"></i>
+                    Name
+                </label>
+                {{ form.name(class="form-control", placeholder="Ihr vollständiger Name", autocomplete="name") }}
+                {% for error in form.name.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">
+                    <i class="bi bi-envelope"></i>
+                    E-Mail
+                </label>
+                {{ form.email(class="form-control", placeholder="ihre@email.de", autocomplete="email") }}
+                {% for error in form.email.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">
+                    <i class="bi bi-lock"></i>
+                    Passwort
+                </label>
+                {{ form.password(class="form-control", placeholder="Mindestens 8 Zeichen", autocomplete="new-password") }}
+                {% for error in form.password.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+                <span class="form-hint">Mindestens 8 Zeichen</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password_confirm">
+                    <i class="bi bi-lock-fill"></i>
+                    Passwort bestätigen
+                </label>
+                {{ form.password_confirm(class="form-control", placeholder="Passwort wiederholen", autocomplete="new-password") }}
+                {% for error in form.password_confirm.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="bi bi-person-check"></i>
+                Registrieren
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Bereits ein Konto? <a href="{{ url_for('login') }}">Jetzt anmelden</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.auth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-logo {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    color: white;
+}
+
+.auth-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.auth-form .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.auth-form .form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.auth-form .form-label i {
+    color: var(--accent-primary);
+}
+
+.auth-form .form-control {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border-radius: 10px;
+}
+
+.auth-form .form-control:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.form-hint {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.btn-block {
+    width: 100%;
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.auth-footer p {
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.auth-footer a {
+    color: var(--accent-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

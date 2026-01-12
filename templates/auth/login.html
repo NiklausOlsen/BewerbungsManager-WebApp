@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Anmelden - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card fade-in">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="bi bi-briefcase-fill"></i>
+            </div>
+            <h1>Willkommen zurück</h1>
+            <p>Melden Sie sich an, um fortzufahren</p>
+        </div>
+
+        <form method="POST" class="auth-form">
+            {{ form.hidden_tag() }}
+            
+            <div class="form-group">
+                <label class="form-label" for="email">
+                    <i class="bi bi-envelope"></i>
+                    E-Mail
+                </label>
+                {{ form.email(class="form-control", placeholder="ihre@email.de", autocomplete="email") }}
+                {% for error in form.email.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">
+                    <i class="bi bi-lock"></i>
+                    Passwort
+                </label>
+                {{ form.password(class="form-control", placeholder="••••••••", autocomplete="current-password") }}
+                {% for error in form.password.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group form-check">
+                {{ form.remember_me(class="form-check-input") }}
+                <label class="form-check-label" for="remember_me">Angemeldet bleiben</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="bi bi-box-arrow-in-right"></i>
+                Anmelden
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Noch kein Konto? <a href="{{ url_for('register') }}">Jetzt registrieren</a></p>
+        </div>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+}
+
+.auth-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.auth-logo {
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    font-size: 2rem;
+    color: white;
+}
+
+.auth-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.auth-header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.auth-form .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.auth-form .form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.auth-form .form-label i {
+    color: var(--accent-primary);
+}
+
+.auth-form .form-control {
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border-radius: 10px;
+}
+
+.auth-form .form-control:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.btn-block {
+    width: 100%;
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+}
+
+.auth-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.auth-footer p {
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.auth-footer a {
+    color: var(--accent-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-check-input {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+}
+
+.form-check-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+</style>
+{% endblock %}

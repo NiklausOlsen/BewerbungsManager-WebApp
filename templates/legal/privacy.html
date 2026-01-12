@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Datenschutzerklärung - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="legal-page fade-in">
+    <div class="legal-header">
+        <a href="{{ url_for('login') if not current_user.is_authenticated else url_for('index') }}" class="back-link">
+            <i class="bi bi-arrow-left"></i> Zurück
+        </a>
+        <h1 class="page-title"><i class="bi bi-shield-lock"></i> Datenschutzerklärung</h1>
+    </div>
+
+    <div class="legal-content card">
+        <section class="legal-section">
+            <h2>1. Verantwortlicher</h2>
+            <p>
+                Verantwortlich für die Datenverarbeitung auf dieser Website ist:<br><br>
+                <strong>Niklaus Olsen</strong><br>
+                E-Mail: niklausolsen@gmail.com
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>2. Erhobene Daten</h2>
+            <p>Bei der Nutzung des BewerbungsManagers werden folgende personenbezogene Daten erhoben und gespeichert:</p>
+            <ul>
+                <li><strong>Registrierungsdaten:</strong> E-Mail-Adresse, Name, Passwort (verschlüsselt gespeichert)</li>
+                <li><strong>Bewerbungsdaten:</strong> Unternehmensnamen, Stellenbezeichnungen, Ansprechpartner, Kontaktdaten, Bewerbungsstatus, Notizen</li>
+                <li><strong>Hochgeladene Dokumente:</strong> PDF-Dateien von Stellenausschreibungen</li>
+                <li><strong>Vorlagen:</strong> Selbst erstellte Anschreiben-Vorlagen</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>3. Zweck der Datenverarbeitung</h2>
+            <p>Die erhobenen Daten werden ausschließlich für folgende Zwecke verwendet:</p>
+            <ul>
+                <li>Bereitstellung und Betrieb des BewerbungsManager-Dienstes</li>
+                <li>Verwaltung Ihrer Bewerbungen und Dokumente</li>
+                <li>Authentifizierung und Sicherheit Ihres Benutzerkontos</li>
+            </ul>
+        </section>
+
+        <section class="legal-section highlight">
+            <h2>4. Keine Weitergabe an Dritte</h2>
+            <p>
+                <i class="bi bi-check-circle-fill"></i>
+                <strong>Ihre Daten werden nicht an Dritte weitergegeben.</strong>
+            </p>
+            <p>
+                Wir verkaufen, vermieten oder teilen Ihre personenbezogenen Daten nicht mit Dritten. 
+                Ihre Bewerbungsdaten sind ausschließlich für Sie selbst zugänglich.
+            </p>
+        </section>
+
+        <section class="legal-section highlight">
+            <h2>5. Keine anderweitige Verwendung</h2>
+            <p>
+                <i class="bi bi-check-circle-fill"></i>
+                <strong>Ihre Daten werden nicht für andere Zwecke verwendet.</strong>
+            </p>
+            <p>
+                Wir verwenden Ihre Daten ausschließlich zur Bereitstellung des BewerbungsManager-Dienstes. 
+                Es erfolgt keine Analyse, kein Profiling und keine Nutzung für Werbezwecke.
+            </p>
+        </section>
+
+        <section class="legal-section highlight">
+            <h2>6. Löschung bei Account-Löschung</h2>
+            <p>
+                <i class="bi bi-check-circle-fill"></i>
+                <strong>Bei Löschung Ihres Accounts werden alle Ihre Daten vollständig gelöscht.</strong>
+            </p>
+            <p>
+                Wenn Sie Ihren Account löschen, werden sämtliche mit Ihrem Konto verbundenen Daten 
+                unwiderruflich gelöscht. Dies umfasst:
+            </p>
+            <ul>
+                <li>Ihre Kontodaten (E-Mail, Name)</li>
+                <li>Alle Bewerbungseinträge</li>
+                <li>Alle hochgeladenen Dokumente</li>
+                <li>Alle erstellten Vorlagen</li>
+                <li>Alle persönlichen Einstellungen</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>7. Datensicherheit</h2>
+            <p>Wir setzen technische und organisatorische Sicherheitsmaßnahmen ein, um Ihre Daten zu schützen:</p>
+            <ul>
+                <li>Verschlüsselte Übertragung (HTTPS/SSL)</li>
+                <li>Sichere Passwort-Speicherung (Hashing)</li>
+                <li>Regelmäßige Sicherheits-Updates</li>
+                <li>Zugriffsbeschränkungen auf Serverebene</li>
+            </ul>
+        </section>
+
+        <section class="legal-section">
+            <h2>8. Ihre Rechte</h2>
+            <p>Sie haben folgende Rechte bezüglich Ihrer personenbezogenen Daten:</p>
+            <ul>
+                <li><strong>Auskunftsrecht:</strong> Sie können jederzeit Auskunft über Ihre gespeicherten Daten verlangen</li>
+                <li><strong>Berichtigungsrecht:</strong> Sie können unrichtige Daten korrigieren lassen</li>
+                <li><strong>Löschungsrecht:</strong> Sie können die Löschung Ihrer Daten verlangen</li>
+                <li><strong>Datenübertragbarkeit:</strong> Sie können Ihre Daten in einem gängigen Format exportieren</li>
+            </ul>
+            <p>Zur Ausübung Ihrer Rechte kontaktieren Sie uns unter: <a href="mailto:niklausolsen@gmail.com">niklausolsen@gmail.com</a></p>
+        </section>
+
+        <section class="legal-section">
+            <h2>9. Cookies</h2>
+            <p>
+                Diese Website verwendet ausschließlich technisch notwendige Cookies für die Sitzungsverwaltung 
+                (Login-Status). Es werden keine Tracking- oder Analyse-Cookies verwendet.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>10. Änderungen</h2>
+            <p>
+                Diese Datenschutzerklärung kann gelegentlich aktualisiert werden. 
+                Die aktuelle Version ist immer auf dieser Seite verfügbar.
+            </p>
+            <p class="legal-date">Stand: Januar 2026</p>
+        </section>
+    </div>
+</div>
+
+<style>
+    .legal-page {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .legal-header {
+        margin-bottom: 2rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+        color: var(--accent-primary);
+    }
+
+    .legal-content {
+        padding: 2rem;
+    }
+
+    .legal-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .legal-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .legal-section h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--accent-primary);
+        margin-bottom: 1rem;
+    }
+
+    .legal-section p {
+        color: var(--text-secondary);
+        line-height: 1.7;
+        margin-bottom: 0.75rem;
+    }
+
+    .legal-section ul {
+        color: var(--text-secondary);
+        margin-left: 1.5rem;
+        line-height: 1.8;
+    }
+
+    .legal-section ul li {
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-section.highlight {
+        background: rgba(0, 212, 170, 0.05);
+        border: 1px solid rgba(0, 212, 170, 0.2);
+        border-radius: var(--radius-md);
+        padding: 1.5rem;
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
+    }
+
+    .legal-section.highlight p:first-of-type {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--accent-primary);
+        font-size: 1rem;
+    }
+
+    .legal-section.highlight i {
+        font-size: 1.2rem;
+    }
+
+    .legal-section a {
+        color: var(--accent-primary);
+        text-decoration: none;
+    }
+
+    .legal-section a:hover {
+        text-decoration: underline;
+    }
+
+    .legal-date {
+        font-style: italic;
+        color: var(--text-muted) !important;
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}

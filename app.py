@@ -42,10 +42,13 @@ def load_user(user_id):
     return db.session.get(User, int(user_id))
 
 
-# CSRF Token für alle Templates verfügbar machen
+# CSRF Token und Hilfsfunktionen für alle Templates verfügbar machen
 @app.context_processor
-def inject_csrf_token():
-    return dict(csrf_token=generate_csrf)
+def inject_template_globals():
+    return dict(
+        csrf_token=generate_csrf,
+        now=datetime.now
+    )
 
 
 # Create tables and instance folder
@@ -1522,6 +1525,22 @@ def export_csv():
             'Content-Disposition': f'attachment; filename=bewerbungen_{date.today().strftime("%Y%m%d")}.csv'
         }
     )
+
+
+# ============================================================================
+# Legal Pages
+# ============================================================================
+
+@app.route('/datenschutz')
+def privacy():
+    """Datenschutzerklärung"""
+    return render_template('legal/privacy.html')
+
+
+@app.route('/impressum')
+def imprint():
+    """Impressum"""
+    return render_template('legal/imprint.html')
 
 
 # ============================================================================

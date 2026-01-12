@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Impressum - BewerbungsManager{% endblock %}
+
+{% block content %}
+<div class="legal-page fade-in">
+    <div class="legal-header">
+        <a href="{{ url_for('login') if not current_user.is_authenticated else url_for('index') }}" class="back-link">
+            <i class="bi bi-arrow-left"></i> Zurück
+        </a>
+        <h1 class="page-title"><i class="bi bi-info-circle"></i> Impressum</h1>
+    </div>
+
+    <div class="legal-content card">
+        <section class="legal-section">
+            <h2>Angaben gemäß § 5 TMG</h2>
+            <p>
+                <strong>Niklaus Olsen</strong><br>
+                <!-- Adresse hier einfügen wenn gewünscht -->
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>Kontakt</h2>
+            <p>
+                E-Mail: <a href="mailto:niklausolsen@gmail.com">niklausolsen@gmail.com</a>
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h2>
+            <p>
+                <strong>Niklaus Olsen</strong><br>
+                E-Mail: niklausolsen@gmail.com
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>Haftungsausschluss</h2>
+            
+            <h3>Haftung für Inhalte</h3>
+            <p>
+                Die Inhalte dieser Seite wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, 
+                Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen. 
+                Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten 
+                nach den allgemeinen Gesetzen verantwortlich.
+            </p>
+
+            <h3>Haftung für Links</h3>
+            <p>
+                Unser Angebot enthält Links zu externen Webseiten Dritter, auf deren Inhalte wir keinen 
+                Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine Gewähr übernehmen. 
+                Für die Inhalte der verlinkten Seiten ist stets der jeweilige Anbieter oder Betreiber der 
+                Seiten verantwortlich.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>Urheberrecht</h2>
+            <p>
+                Die durch den Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen 
+                dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung, Verbreitung und jede Art 
+                der Verwertung außerhalb der Grenzen des Urheberrechtes bedürfen der schriftlichen 
+                Zustimmung des jeweiligen Autors bzw. Erstellers.
+            </p>
+        </section>
+
+        <section class="legal-section">
+            <h2>Streitschlichtung</h2>
+            <p>
+                Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: 
+                <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr</a>
+            </p>
+            <p>
+                Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer 
+                Verbraucherschlichtungsstelle teilzunehmen.
+            </p>
+        </section>
+    </div>
+</div>
+
+<style>
+    .legal-page {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .legal-header {
+        margin-bottom: 2rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        transition: color 0.2s ease;
+    }
+
+    .back-link:hover {
+        color: var(--accent-primary);
+    }
+
+    .legal-content {
+        padding: 2rem;
+    }
+
+    .legal-section {
+        margin-bottom: 2rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .legal-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+
+    .legal-section h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--accent-primary);
+        margin-bottom: 1rem;
+    }
+
+    .legal-section h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .legal-section p {
+        color: var(--text-secondary);
+        line-height: 1.7;
+        margin-bottom: 0.75rem;
+    }
+
+    .legal-section a {
+        color: var(--accent-primary);
+        text-decoration: none;
+    }
+
+    .legal-section a:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}

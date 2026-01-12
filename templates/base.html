@@ -882,6 +882,84 @@
         {% block content %}{% endblock %}
     </main>
 
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-links">
+                <a href="{{ url_for('privacy') }}"><i class="bi bi-shield-lock"></i> Datenschutz</a>
+                <span class="footer-divider">|</span>
+                <a href="{{ url_for('imprint') }}"><i class="bi bi-info-circle"></i> Impressum</a>
+            </div>
+            <div class="footer-copyright">
+                © {{ now().year if now is defined else 2026 }} BewerbungsManager
+            </div>
+        </div>
+    </footer>
+
+    <style>
+        .site-footer {
+            margin-top: auto;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
+        .footer-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .footer-links {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .footer-links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent-primary);
+        }
+
+        .footer-divider {
+            color: var(--border-color);
+        }
+
+        .footer-copyright {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        @media (max-width: 768px) {
+            .footer-container {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+
+        /* Ensure footer stays at bottom */
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-content {
+            flex: 1;
+        }
+    </style>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

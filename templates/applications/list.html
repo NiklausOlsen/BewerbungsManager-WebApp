@@ -86,7 +86,7 @@
         <tbody>
             {% for app in applications %}
             <tr>
-                <td>{{ app.id }}</td>
+                <td>{{ loop.index }}</td>
                 <td>
                     <strong>{{ app.company_name }}</strong>
                     {% if app.location %}

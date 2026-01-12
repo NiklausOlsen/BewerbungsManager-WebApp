@@ -237,7 +237,8 @@ def index():
         'offers': Application.query.filter_by(status='offer').count()
     }
     recent_applications = Application.query.order_by(
-        Application.last_update.desc()
+        Application.sent_date.desc().nullslast(),
+        Application.created_at.desc()
     ).limit(5).all()
     
     return render_template('index.html', stats=stats, recent_applications=recent_applications)
@@ -282,8 +283,11 @@ def applications_list():
             )
         )
     
-    # Sortierung: Neueste zuerst
-    applications = query.order_by(Application.last_update.desc()).all()
+    # Sortierung: Nach Versanddatum (neueste zuerst), dann nach Erstellungsdatum
+    applications = query.order_by(
+        Application.sent_date.desc().nullslast(),
+        Application.created_at.desc()
+    ).all()
     
     return render_template(
         'applications/list.html',

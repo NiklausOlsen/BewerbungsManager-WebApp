@@ -1,0 +1,455 @@
+{% extends "base.html" %}
+
+{% block title %}Datenbank-Verwaltung - Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">
+        <i class="bi bi-database"></i>
+        Datenbank-Verwaltung
+    </h1>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('admin_export_all') }}" class="btn btn-primary">
+            <i class="bi bi-download"></i>
+            Komplett-Backup (JSON)
+        </a>
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('importFile').click()">
+            <i class="bi bi-upload"></i>
+            Daten importieren
+        </button>
+        <form action="{{ url_for('admin_import_data') }}" method="POST" enctype="multipart/form-data" style="display: none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="file" id="importFile" name="file" accept=".json" onchange="this.form.submit()">
+        </form>
+    </div>
+</div>
+
+<!-- Statistiken -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.users }}</h4>
+            <p>Benutzer</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="bi bi-briefcase-fill"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.applications }}</h4>
+            <p>Bewerbungen</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="bi bi-file-earmark-text-fill"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.templates }}</h4>
+            <p>Vorlagen</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon danger">
+            <i class="bi bi-trash-fill"></i>
+        </div>
+        <div class="stat-content">
+            <h4>{{ stats.deleted }}</h4>
+            <p>Gelöschte Einträge</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs für verschiedene Tabellen -->
+<div class="card fade-in">
+    <div class="card-header">
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="showTab('users')">
+                <i class="bi bi-people"></i> Benutzer ({{ stats.users }})
+            </button>
+            <button class="tab-btn" onclick="showTab('applications')">
+                <i class="bi bi-briefcase"></i> Bewerbungen ({{ stats.applications }})
+            </button>
+            <button class="tab-btn" onclick="showTab('templates')">
+                <i class="bi bi-file-text"></i> Vorlagen ({{ stats.templates }})
+            </button>
+            <button class="tab-btn" onclick="showTab('letters')">
+                <i class="bi bi-envelope"></i> Anschreiben ({{ stats.letters }})
+            </button>
+            <button class="tab-btn" onclick="showTab('documents')">
+                <i class="bi bi-paperclip"></i> Dokumente ({{ stats.documents }})
+            </button>
+            <button class="tab-btn" onclick="showTab('deleted')">
+                <i class="bi bi-trash"></i> Papierkorb ({{ stats.deleted }})
+            </button>
+        </div>
+    </div>
+
+    <!-- Benutzer Tab -->
+    <div id="tab-users" class="tab-content active">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>E-Mail</th>
+                        <th>Status</th>
+                        <th>Admin</th>
+                        <th>Bewerbungen</th>
+                        <th>Registriert</th>
+                        <th>Letzter Login</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.name or '-' }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.is_active %}
+                            <span class="badge badge-success">Aktiv</span>
+                            {% else %}
+                            <span class="badge badge-warning">Wartend</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.is_admin %}
+                            <span class="badge badge-primary">Ja</span>
+                            {% else %}
+                            <span class="badge badge-secondary">Nein</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.application_count }}</td>
+                        <td>{{ user.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>{{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bewerbungen Tab -->
+    <div id="tab-applications" class="tab-content">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Benutzer</th>
+                        <th>Unternehmen</th>
+                        <th>Position</th>
+                        <th>Status</th>
+                        <th>Versanddatum</th>
+                        <th>Erstellt</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr {% if app.is_deleted %}style="opacity: 0.5; text-decoration: line-through;"{% endif %}>
+                        <td>{{ app.id }}</td>
+                        <td>{{ app.user.email if app.user else '-' }}</td>
+                        <td>{{ app.company_name }}</td>
+                        <td>{{ app.job_title }}</td>
+                        <td><span class="badge badge-{{ app.status }}">{{ app.status }}</span></td>
+                        <td>{{ app.sent_date.strftime('%d.%m.%Y') if app.sent_date else '-' }}</td>
+                        <td>{{ app.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>
+                            {% if app.is_deleted %}
+                            <form action="{{ url_for('admin_restore_application', id=app.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-success" title="Wiederherstellen">
+                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Vorlagen Tab -->
+    <div id="tab-templates" class="tab-content">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Benutzer</th>
+                        <th>Name</th>
+                        <th>Beschreibung</th>
+                        <th>Standard</th>
+                        <th>Erstellt</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tpl in templates %}
+                    <tr>
+                        <td>{{ tpl.id }}</td>
+                        <td>{{ tpl.user.email if tpl.user else 'Global' }}</td>
+                        <td>{{ tpl.name }}</td>
+                        <td>{{ tpl.description or '-' }}</td>
+                        <td>
+                            {% if tpl.is_default %}
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                            <i class="bi bi-x-circle text-muted"></i>
+                            {% endif %}
+                        </td>
+                        <td>{{ tpl.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Anschreiben Tab -->
+    <div id="tab-letters" class="tab-content">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Bewerbung</th>
+                        <th>Unternehmen</th>
+                        <th>Erstellt</th>
+                        <th>Vorschau</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for letter in letters %}
+                    <tr>
+                        <td>{{ letter.id }}</td>
+                        <td>{{ letter.application_id }}</td>
+                        <td>{{ letter.application.company_name if letter.application else '-' }}</td>
+                        <td>{{ letter.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="showLetterPreview({{ letter.id }}, `{{ letter.rendered_text[:200]|e }}...`)">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Dokumente Tab -->
+    <div id="tab-documents" class="tab-content">
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Bewerbung</th>
+                        <th>Dateiname</th>
+                        <th>Typ</th>
+                        <th>Größe</th>
+                        <th>Hochgeladen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in documents %}
+                    <tr>
+                        <td>{{ doc.id }}</td>
+                        <td>{{ doc.application_id }}</td>
+                        <td>{{ doc.filename }}</td>
+                        <td>{{ doc.file_type or '-' }}</td>
+                        <td>{{ (doc.file_size / 1024)|round(1) }} KB</td>
+                        <td>{{ doc.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Papierkorb Tab -->
+    <div id="tab-deleted" class="tab-content">
+        <div class="table-container">
+            {% if deleted_records %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tabelle</th>
+                        <th>Original-ID</th>
+                        <th>Gelöscht am</th>
+                        <th>Gelöscht von</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in deleted_records %}
+                    <tr>
+                        <td>{{ record.id }}</td>
+                        <td>{{ record.table_name }}</td>
+                        <td>{{ record.record_id }}</td>
+                        <td>{{ record.deleted_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>{{ record.deleted_by or '-' }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary" onclick="showDeletedData({{ record.id }}, `{{ record.record_data|e }}`)">
+                                <i class="bi bi-eye"></i> Daten
+                            </button>
+                            <form action="{{ url_for('admin_restore_deleted', id=record.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-success">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Wiederherstellen
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted" style="padding: 2rem; text-align: center;">
+                <i class="bi bi-check-circle" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                Keine gelöschten Einträge vorhanden.
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal für Vorschau -->
+<div id="previewModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Vorschau</h3>
+            <button onclick="closeModal()" class="btn btn-secondary btn-icon">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <pre id="previewContent" style="white-space: pre-wrap; font-family: inherit;"></pre>
+        </div>
+    </div>
+</div>
+
+<style>
+.tab-nav {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tab-btn {
+    padding: 0.5rem 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+}
+
+.tab-content {
+    display: none;
+    padding: 1rem 0;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 1rem;
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-body {
+    padding: 1rem;
+}
+</style>
+
+<script>
+function showTab(tabName) {
+    // Alle Tabs ausblenden
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Gewählten Tab anzeigen
+    document.getElementById('tab-' + tabName).classList.add('active');
+    event.target.classList.add('active');
+}
+
+function showLetterPreview(id, content) {
+    document.getElementById('previewContent').textContent = content;
+    document.getElementById('previewModal').style.display = 'flex';
+}
+
+function showDeletedData(id, data) {
+    try {
+        const parsed = JSON.parse(data);
+        document.getElementById('previewContent').textContent = JSON.stringify(parsed, null, 2);
+    } catch {
+        document.getElementById('previewContent').textContent = data;
+    }
+    document.getElementById('previewModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('previewModal').style.display = 'none';
+}
+
+// Modal schließen bei Klick außerhalb
+document.getElementById('previewModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

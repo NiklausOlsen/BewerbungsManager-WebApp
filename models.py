@@ -6,6 +6,21 @@ from werkzeug.security import generate_password_hash, check_password_hash
 db = SQLAlchemy()
 
 
+class DeletedRecord(db.Model):
+    """Archiv für gelöschte Datensätze - NIEMALS wirklich löschen!"""
+    __tablename__ = 'deleted_records'
+
+    id = db.Column(db.Integer, primary_key=True)
+    table_name = db.Column(db.String(100), nullable=False)
+    record_id = db.Column(db.Integer, nullable=False)
+    record_data = db.Column(db.Text, nullable=False)  # JSON der gelöschten Daten
+    deleted_by = db.Column(db.Integer, nullable=True)  # User ID der löschenden Person
+    deleted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<DeletedRecord {self.table_name}:{self.record_id}>'
+
+
 class User(UserMixin, db.Model):
     """Benutzer-Model für Authentifizierung"""
     __tablename__ = 'users'
@@ -37,6 +52,11 @@ class User(UserMixin, db.Model):
             return 'Wartend'
         return 'Aktiv'
 
+    # Beziehungen
+    applications = db.relationship('Application', backref='user', lazy=True)
+    templates = db.relationship('Template', backref='user', lazy=True)
+    settings = db.relationship('UserSettings', backref='user', uselist=False, lazy=True)
+
     def __repr__(self):
         return f'<User {self.email}>'
 
@@ -46,6 +66,11 @@ class Application(db.Model):
     __tablename__ = 'applications'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Zuordnung zu Benutzer
+    
+    # Soft Delete
+    is_deleted = db.Column(db.Boolean, default=False)
+    deleted_at = db.Column(db.DateTime, nullable=True)
     
     # Pflichtfelder
     company_name = db.Column(db.String(200), nullable=False)
@@ -147,6 +172,7 @@ class UserSettings(db.Model):
     __tablename__ = 'user_settings'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Zuordnung zu Benutzer
     your_name = db.Column(db.String(200), nullable=True)
     your_address = db.Column(db.Text, nullable=True)
     your_email = db.Column(db.String(200), nullable=True)
@@ -175,6 +201,7 @@ class Template(db.Model):
     __tablename__ = 'templates'
 
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Zuordnung zu Benutzer
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.String(500), nullable=True)
     content = db.Column(db.Text, nullable=False)

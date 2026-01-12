@@ -5,6 +5,7 @@ Eine Flask-Anwendung zur Verwaltung von Bewerbungen und Generierung von Anschrei
 import os
 import csv
 import io
+import json
 from datetime import date, datetime
 from flask import (
     Flask, render_template, request, redirect, url_for, 
@@ -15,7 +16,7 @@ from flask_wtf.csrf import generate_csrf
 import uuid
 from werkzeug.utils import secure_filename
 from config import Config
-from models import db, Application, UserSettings, Letter, Template, Document, User
+from models import db, Application, UserSettings, Letter, Template, Document, User, DeletedRecord
 from forms import ApplicationForm, TextGeneratorForm, UserSettingsForm, TemplateForm, LoginForm, RegisterForm
 from services.textgen import text_generator, TextGenerator
 from services.pdfgen import pdf_generator, generate_filename
@@ -208,16 +209,379 @@ def admin_toggle_admin(user_id):
 @login_required
 @admin_required
 def admin_delete_user(user_id):
-    """Admin: Benutzer löschen"""
+    """Admin: Benutzer löschen (mit Archivierung)"""
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
         flash('Sie können sich nicht selbst löschen.', 'error')
         return redirect(url_for('admin_users'))
+    
+    # Benutzer-Daten archivieren
+    user_data = {
+        'id': user.id,
+        'email': user.email,
+        'name': user.name,
+        'is_active': user.is_active,
+        'is_admin': user.is_admin,
+        'created_at': user.created_at.isoformat() if user.created_at else None,
+        'last_login': user.last_login.isoformat() if user.last_login else None
+    }
+    
+    deleted_record = DeletedRecord(
+        table_name='users',
+        record_id=user.id,
+        record_data=json.dumps(user_data),
+        deleted_by=current_user.id
+    )
+    db.session.add(deleted_record)
+    
     email = user.email
     db.session.delete(user)
     db.session.commit()
-    flash(f'Benutzer {email} wurde gelöscht.', 'success')
+    flash(f'Benutzer {email} wurde gelöscht und archiviert.', 'success')
     return redirect(url_for('admin_users'))
+
+
+@app.route('/admin/users/<int:user_id>/reset-password', methods=['POST'])
+@login_required
+@admin_required
+def admin_reset_password(user_id):
+    """Admin: Passwort eines Benutzers zurücksetzen"""
+    user = User.query.get_or_404(user_id)
+    new_password = request.form.get('new_password', '')
+    
+    if len(new_password) < 6:
+        flash('Passwort muss mindestens 6 Zeichen lang sein.', 'error')
+        return redirect(url_for('admin_users'))
+    
+    user.set_password(new_password)
+    db.session.commit()
+    flash(f'Passwort für {user.email} wurde zurückgesetzt.', 'success')
+    return redirect(url_for('admin_users'))
+
+
+# ============================================================================
+# Admin - Datenbank-Verwaltung
+# ============================================================================
+
+@app.route('/admin/database')
+@login_required
+@admin_required
+def admin_database():
+    """Admin: Datenbank-Übersicht mit allen Tabellen"""
+    # Statistiken
+    stats = {
+        'users': User.query.count(),
+        'applications': Application.query.count(),
+        'templates': Template.query.count(),
+        'letters': Letter.query.count(),
+        'documents': Document.query.count(),
+        'deleted': DeletedRecord.query.count()
+    }
+    
+    # Alle Daten laden
+    users = User.query.order_by(User.created_at.desc()).all()
+    # Bewerbungsanzahl pro Benutzer hinzufügen
+    for user in users:
+        user.application_count = Application.query.filter_by(user_id=user.id).count()
+    
+    applications = Application.query.order_by(Application.created_at.desc()).all()
+    templates = Template.query.order_by(Template.created_at.desc()).all()
+    letters = Letter.query.order_by(Letter.created_at.desc()).all()
+    documents = Document.query.order_by(Document.created_at.desc()).all()
+    deleted_records = DeletedRecord.query.order_by(DeletedRecord.deleted_at.desc()).all()
+    
+    return render_template(
+        'admin/database.html',
+        stats=stats,
+        users=users,
+        applications=applications,
+        templates=templates,
+        letters=letters,
+        documents=documents,
+        deleted_records=deleted_records
+    )
+
+
+@app.route('/admin/export-all')
+@login_required
+@admin_required
+def admin_export_all():
+    """Admin: Komplettes Datenbank-Backup als JSON"""
+    backup_data = {
+        'exported_at': datetime.utcnow().isoformat(),
+        'exported_by': current_user.email,
+        'users': [],
+        'applications': [],
+        'templates': [],
+        'letters': [],
+        'user_settings': [],
+        'documents': [],
+        'deleted_records': []
+    }
+    
+    # Benutzer exportieren (ohne Passwort-Hashes)
+    for user in User.query.all():
+        backup_data['users'].append({
+            'id': user.id,
+            'email': user.email,
+            'name': user.name,
+            'is_active': user.is_active,
+            'is_admin': user.is_admin,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+            'last_login': user.last_login.isoformat() if user.last_login else None
+        })
+    
+    # Bewerbungen exportieren
+    for app in Application.query.all():
+        backup_data['applications'].append({
+            'id': app.id,
+            'user_id': app.user_id,
+            'company_name': app.company_name,
+            'job_title': app.job_title,
+            'sent_date': app.sent_date.isoformat() if app.sent_date else None,
+            'status': app.status,
+            'feedback': app.feedback,
+            'response_received': app.response_received,
+            'salary_expectation_given': app.salary_expectation_given,
+            'salary_amount': float(app.salary_amount) if app.salary_amount else None,
+            'salary_currency': app.salary_currency,
+            'salary_period': app.salary_period,
+            'contact_person': app.contact_person,
+            'company_address': app.company_address,
+            'website': app.website,
+            'job_url': app.job_url,
+            'location': app.location,
+            'remote_possible': app.remote_possible,
+            'source': app.source,
+            'notes': app.notes,
+            'is_deleted': app.is_deleted,
+            'deleted_at': app.deleted_at.isoformat() if app.deleted_at else None,
+            'created_at': app.created_at.isoformat() if app.created_at else None,
+            'last_update': app.last_update.isoformat() if app.last_update else None
+        })
+    
+    # Vorlagen exportieren
+    for tpl in Template.query.all():
+        backup_data['templates'].append({
+            'id': tpl.id,
+            'user_id': tpl.user_id,
+            'name': tpl.name,
+            'description': tpl.description,
+            'content': tpl.content,
+            'is_default': tpl.is_default,
+            'created_at': tpl.created_at.isoformat() if tpl.created_at else None
+        })
+    
+    # Anschreiben exportieren
+    for letter in Letter.query.all():
+        backup_data['letters'].append({
+            'id': letter.id,
+            'application_id': letter.application_id,
+            'template_used': letter.template_used,
+            'rendered_text': letter.rendered_text,
+            'created_at': letter.created_at.isoformat() if letter.created_at else None
+        })
+    
+    # Benutzereinstellungen exportieren
+    for settings in UserSettings.query.all():
+        backup_data['user_settings'].append({
+            'id': settings.id,
+            'user_id': settings.user_id,
+            'your_name': settings.your_name,
+            'your_address': settings.your_address,
+            'your_email': settings.your_email,
+            'your_phone': settings.your_phone,
+            'default_template': settings.default_template
+        })
+    
+    # Dokumente exportieren (nur Metadaten, nicht die Dateien selbst)
+    for doc in Document.query.all():
+        backup_data['documents'].append({
+            'id': doc.id,
+            'application_id': doc.application_id,
+            'filename': doc.filename,
+            'stored_filename': doc.stored_filename,
+            'file_type': doc.file_type,
+            'file_size': doc.file_size,
+            'description': doc.description,
+            'created_at': doc.created_at.isoformat() if doc.created_at else None
+        })
+    
+    # Gelöschte Einträge exportieren
+    for record in DeletedRecord.query.all():
+        backup_data['deleted_records'].append({
+            'id': record.id,
+            'table_name': record.table_name,
+            'record_id': record.record_id,
+            'record_data': record.record_data,
+            'deleted_by': record.deleted_by,
+            'deleted_at': record.deleted_at.isoformat() if record.deleted_at else None
+        })
+    
+    # JSON-Response erstellen
+    output = json.dumps(backup_data, ensure_ascii=False, indent=2)
+    
+    return Response(
+        output,
+        mimetype='application/json',
+        headers={
+            'Content-Disposition': f'attachment; filename=bewerbungsmanager_backup_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+        }
+    )
+
+
+@app.route('/admin/import-data', methods=['POST'])
+@login_required
+@admin_required
+def admin_import_data():
+    """Admin: Daten aus JSON-Backup importieren"""
+    if 'file' not in request.files:
+        flash('Keine Datei ausgewählt!', 'error')
+        return redirect(url_for('admin_database'))
+    
+    file = request.files['file']
+    if file.filename == '':
+        flash('Keine Datei ausgewählt!', 'error')
+        return redirect(url_for('admin_database'))
+    
+    if not file.filename.endswith('.json'):
+        flash('Nur JSON-Dateien sind erlaubt!', 'error')
+        return redirect(url_for('admin_database'))
+    
+    try:
+        data = json.load(file)
+        imported_counts = {'applications': 0, 'templates': 0, 'letters': 0}
+        
+        # Bewerbungen importieren
+        for app_data in data.get('applications', []):
+            # Prüfen ob Bewerbung bereits existiert
+            existing = Application.query.filter_by(
+                company_name=app_data.get('company_name'),
+                job_title=app_data.get('job_title'),
+                user_id=app_data.get('user_id') or current_user.id
+            ).first()
+            
+            if not existing:
+                app = Application(
+                    user_id=app_data.get('user_id') or current_user.id,
+                    company_name=app_data.get('company_name'),
+                    job_title=app_data.get('job_title'),
+                    status=app_data.get('status', 'draft'),
+                    feedback=app_data.get('feedback', 'unknown'),
+                    response_received=app_data.get('response_received', False),
+                    salary_expectation_given=app_data.get('salary_expectation_given', False),
+                    salary_amount=app_data.get('salary_amount'),
+                    salary_currency=app_data.get('salary_currency', 'EUR'),
+                    salary_period=app_data.get('salary_period', 'year'),
+                    contact_person=app_data.get('contact_person'),
+                    company_address=app_data.get('company_address'),
+                    website=app_data.get('website'),
+                    job_url=app_data.get('job_url'),
+                    location=app_data.get('location'),
+                    remote_possible=app_data.get('remote_possible', False),
+                    source=app_data.get('source'),
+                    notes=app_data.get('notes')
+                )
+                if app_data.get('sent_date'):
+                    app.sent_date = datetime.fromisoformat(app_data['sent_date']).date()
+                db.session.add(app)
+                imported_counts['applications'] += 1
+        
+        # Vorlagen importieren
+        for tpl_data in data.get('templates', []):
+            existing = Template.query.filter_by(
+                name=tpl_data.get('name'),
+                user_id=tpl_data.get('user_id') or current_user.id
+            ).first()
+            
+            if not existing:
+                tpl = Template(
+                    user_id=tpl_data.get('user_id') or current_user.id,
+                    name=tpl_data.get('name'),
+                    description=tpl_data.get('description'),
+                    content=tpl_data.get('content'),
+                    is_default=tpl_data.get('is_default', False)
+                )
+                db.session.add(tpl)
+                imported_counts['templates'] += 1
+        
+        db.session.commit()
+        
+        flash(f'Import erfolgreich! {imported_counts["applications"]} Bewerbungen, {imported_counts["templates"]} Vorlagen importiert.', 'success')
+        
+    except json.JSONDecodeError:
+        flash('Ungültiges JSON-Format!', 'error')
+    except Exception as e:
+        flash(f'Fehler beim Import: {str(e)}', 'error')
+        db.session.rollback()
+    
+    return redirect(url_for('admin_database'))
+
+
+@app.route('/admin/applications/<int:id>/restore', methods=['POST'])
+@login_required
+@admin_required
+def admin_restore_application(id):
+    """Admin: Soft-gelöschte Bewerbung wiederherstellen"""
+    app = Application.query.get_or_404(id)
+    app.is_deleted = False
+    app.deleted_at = None
+    db.session.commit()
+    flash(f'Bewerbung "{app.company_name}" wurde wiederhergestellt.', 'success')
+    return redirect(url_for('admin_database'))
+
+
+@app.route('/admin/deleted/<int:id>/restore', methods=['POST'])
+@login_required
+@admin_required
+def admin_restore_deleted(id):
+    """Admin: Gelöschten Eintrag aus dem Archiv wiederherstellen"""
+    record = DeletedRecord.query.get_or_404(id)
+    
+    try:
+        data = json.loads(record.record_data)
+        
+        if record.table_name == 'applications':
+            app = Application(
+                user_id=data.get('user_id'),
+                company_name=data.get('company_name'),
+                job_title=data.get('job_title'),
+                status=data.get('status', 'draft'),
+                feedback=data.get('feedback', 'unknown'),
+                response_received=data.get('response_received', False),
+                salary_expectation_given=data.get('salary_expectation_given', False),
+                salary_amount=data.get('salary_amount'),
+                salary_currency=data.get('salary_currency', 'EUR'),
+                salary_period=data.get('salary_period', 'year'),
+                contact_person=data.get('contact_person'),
+                company_address=data.get('company_address'),
+                website=data.get('website'),
+                job_url=data.get('job_url'),
+                location=data.get('location'),
+                remote_possible=data.get('remote_possible', False),
+                source=data.get('source'),
+                notes=data.get('notes')
+            )
+            if data.get('sent_date'):
+                app.sent_date = datetime.fromisoformat(data['sent_date']).date()
+            db.session.add(app)
+            
+        elif record.table_name == 'users':
+            # Benutzer können nicht automatisch wiederhergestellt werden (Passwort fehlt)
+            flash('Benutzer können nicht automatisch wiederhergestellt werden. Bitte manuell neu anlegen.', 'warning')
+            return redirect(url_for('admin_database'))
+        
+        # Archiv-Eintrag löschen
+        db.session.delete(record)
+        db.session.commit()
+        
+        flash(f'Eintrag aus {record.table_name} wurde wiederhergestellt.', 'success')
+        
+    except Exception as e:
+        flash(f'Fehler bei der Wiederherstellung: {str(e)}', 'error')
+        db.session.rollback()
+    
+    return redirect(url_for('admin_database'))
 
 
 @app.route('/logout')
@@ -237,13 +601,19 @@ def logout():
 @login_required
 def index():
     """Dashboard mit Statistiken und letzten Bewerbungen"""
+    # Nur nicht-gelöschte Bewerbungen zählen
+    active_apps = Application.query.filter(
+        db.or_(Application.is_deleted == False, Application.is_deleted == None)
+    )
     stats = {
-        'total': Application.query.count(),
-        'pending': Application.query.filter(Application.status.in_(['draft', 'sent'])).count(),
-        'interviews': Application.query.filter_by(status='interview').count(),
-        'offers': Application.query.filter_by(status='offer').count()
+        'total': active_apps.count(),
+        'pending': active_apps.filter(Application.status.in_(['draft', 'sent'])).count(),
+        'interviews': active_apps.filter(Application.status == 'interview').count(),
+        'offers': active_apps.filter(Application.status == 'offer').count()
     }
-    recent_applications = Application.query.order_by(
+    recent_applications = Application.query.filter(
+        db.or_(Application.is_deleted == False, Application.is_deleted == None)
+    ).order_by(
         Application.sent_date.desc().nullslast(),
         Application.created_at.desc()
     ).limit(5).all()
@@ -259,7 +629,10 @@ def index():
 @login_required
 def applications_list():
     """Liste aller Bewerbungen mit Filtern"""
-    query = Application.query
+    # Nur nicht-gelöschte Bewerbungen anzeigen
+    query = Application.query.filter(
+        db.or_(Application.is_deleted == False, Application.is_deleted == None)
+    )
     
     # Filter: Status
     status = request.args.get('status')
@@ -378,16 +751,50 @@ def application_edit(id):
 @app.route('/applications/<int:id>/delete', methods=['POST'])
 @login_required
 def application_delete(id):
-    """Bewerbung löschen"""
+    """Bewerbung löschen (Soft-Delete - Daten werden archiviert)"""
     application = Application.query.get_or_404(id)
     
-    # Auch verknüpfte Letters löschen
-    Letter.query.filter_by(application_id=id).delete()
+    # Bewerbungs-Daten archivieren
+    app_data = {
+        'id': application.id,
+        'user_id': application.user_id,
+        'company_name': application.company_name,
+        'job_title': application.job_title,
+        'sent_date': application.sent_date.isoformat() if application.sent_date else None,
+        'status': application.status,
+        'feedback': application.feedback,
+        'response_received': application.response_received,
+        'salary_expectation_given': application.salary_expectation_given,
+        'salary_amount': float(application.salary_amount) if application.salary_amount else None,
+        'salary_currency': application.salary_currency,
+        'salary_period': application.salary_period,
+        'contact_person': application.contact_person,
+        'company_address': application.company_address,
+        'website': application.website,
+        'job_url': application.job_url,
+        'location': application.location,
+        'remote_possible': application.remote_possible,
+        'source': application.source,
+        'notes': application.notes,
+        'created_at': application.created_at.isoformat() if application.created_at else None
+    }
     
-    db.session.delete(application)
+    # In Archiv speichern
+    deleted_record = DeletedRecord(
+        table_name='applications',
+        record_id=application.id,
+        record_data=json.dumps(app_data),
+        deleted_by=current_user.id
+    )
+    db.session.add(deleted_record)
+    
+    # Soft-Delete: Markieren statt löschen
+    application.is_deleted = True
+    application.deleted_at = datetime.utcnow()
+    
     db.session.commit()
     
-    flash('Bewerbung erfolgreich gelöscht!', 'success')
+    flash('Bewerbung wurde in den Papierkorb verschoben. Sie kann vom Admin wiederhergestellt werden.', 'success')
     return redirect(url_for('applications_list'))
 
 

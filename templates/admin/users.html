@@ -8,12 +8,18 @@
         <i class="bi bi-people"></i>
         Benutzerverwaltung
     </h1>
-    {% if pending_count > 0 %}
-    <span class="badge badge-pending-large">
-        <i class="bi bi-hourglass-split"></i>
-        {{ pending_count }} wartend
-    </span>
-    {% endif %}
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+        {% if pending_count > 0 %}
+        <span class="badge badge-pending-large">
+            <i class="bi bi-hourglass-split"></i>
+            {{ pending_count }} wartend
+        </span>
+        {% endif %}
+        <a href="{{ url_for('admin_database') }}" class="btn btn-secondary">
+            <i class="bi bi-database"></i>
+            Datenbank
+        </a>
+    </div>
 </div>
 
 <!-- Statistiken -->
@@ -195,6 +201,11 @@
                                 </button>
                             </form>
                             
+                            <button type="button" class="btn btn-secondary btn-icon" title="Passwort zurücksetzen" 
+                                    onclick="showPasswordReset({{ user.id }}, '{{ user.email }}')">
+                                <i class="bi bi-key"></i>
+                            </button>
+                            
                             <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="POST" style="display: inline;"
                                   onsubmit="return confirm('Benutzer {{ user.email }} wirklich löschen?');">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -210,6 +221,33 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Modal für Passwort-Reset -->
+<div id="passwordModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="bi bi-key"></i> Passwort zurücksetzen</h3>
+            <button onclick="closePasswordModal()" class="btn btn-secondary btn-icon">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <p id="passwordModalUser" style="margin-bottom: 1rem;"></p>
+            <form id="passwordResetForm" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label class="form-label">Neues Passwort</label>
+                    <input type="password" name="new_password" class="form-control" minlength="6" required 
+                           placeholder="Mindestens 6 Zeichen">
+                </div>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" onclick="closePasswordModal()" class="btn btn-secondary">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Passwort setzen</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -243,5 +281,56 @@
     display: flex;
     gap: 0.5rem;
 }
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 1rem;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-body {
+    padding: 1rem;
+}
 </style>
+
+<script>
+function showPasswordReset(userId, email) {
+    document.getElementById('passwordModalUser').textContent = 'Passwort für: ' + email;
+    document.getElementById('passwordResetForm').action = '/admin/users/' + userId + '/reset-password';
+    document.getElementById('passwordModal').style.display = 'flex';
+}
+
+function closePasswordModal() {
+    document.getElementById('passwordModal').style.display = 'none';
+}
+
+// Modal schließen bei Klick außerhalb
+document.getElementById('passwordModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePasswordModal();
+    }
+});
+</script>
 {% endblock %}

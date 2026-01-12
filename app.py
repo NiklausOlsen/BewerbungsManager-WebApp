@@ -71,6 +71,9 @@ def allowed_file(filename):
 
 def create_sample_data_for_user(user_id):
     """Erstellt Beispieldaten für einen neuen Benutzer"""
+    # Benutzerdaten abrufen
+    user = db.session.get(User, user_id)
+    
     # Beispiel-Bewerbung
     sample_app = Application(
         user_id=user_id,
@@ -108,13 +111,13 @@ Mit freundlichen Grüßen
     )
     db.session.add(sample_template)
     
-    # Beispiel-Einstellungen
+    # Einstellungen mit echten User-Daten vorausfüllen
     sample_settings = UserSettings(
         user_id=user_id,
-        name="Max Mustermann",
-        email="max.mustermann@example.com",
-        phone="+49 123 4567890",
-        address="Musterstraße 1\n12345 Musterstadt",
+        your_name=user.name if user else "Max Mustermann",
+        your_email=user.email if user else "max.mustermann@example.com",
+        your_phone="+49 123 4567890",
+        your_address="Musterstraße 1\n12345 Musterstadt",
         created_at=datetime.utcnow()
     )
     db.session.add(sample_settings)
@@ -1424,7 +1427,12 @@ def settings():
     user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
     
     if not user_settings:
-        user_settings = UserSettings(user_id=current_user.id)
+        # Neue Einstellungen mit Daten aus User-Account vorausfüllen
+        user_settings = UserSettings(
+            user_id=current_user.id,
+            your_name=current_user.name,
+            your_email=current_user.email
+        )
         db.session.add(user_settings)
         db.session.commit()
     

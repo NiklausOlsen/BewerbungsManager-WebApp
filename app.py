@@ -69,6 +69,59 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
+def create_sample_data_for_user(user_id):
+    """Erstellt Beispieldaten für einen neuen Benutzer"""
+    # Beispiel-Bewerbung
+    sample_app = Application(
+        user_id=user_id,
+        company_name="Beispiel GmbH",
+        job_title="Projektmanager (m/w/d)",
+        location="Berlin",
+        remote_possible=True,
+        contact_person="Frau Muster",
+        contact_email="bewerbung@beispiel-gmbh.de",
+        contact_phone="+49 30 12345678",
+        company_address="Musterstraße 123\n10115 Berlin",
+        source="LinkedIn",
+        job_url="https://www.beispiel-gmbh.de/karriere",
+        status="draft",
+        feedback="unknown",
+        response_received=False,
+        notes="Dies ist eine Beispiel-Bewerbung. Sie können diese bearbeiten oder löschen.",
+        created_at=datetime.utcnow()
+    )
+    db.session.add(sample_app)
+    
+    # Beispiel-Vorlage
+    sample_template = Template(
+        user_id=user_id,
+        name="Beispiel-Anschreiben",
+        content="""Sehr geehrte Damen und Herren,
+
+mit großem Interesse habe ich Ihre Stellenausschreibung für die Position als {job_title} gelesen.
+
+{company_name} hat sich als innovatives Unternehmen etabliert, und ich möchte Teil Ihres Teams werden.
+
+Mit freundlichen Grüßen
+{my_name}""",
+        created_at=datetime.utcnow()
+    )
+    db.session.add(sample_template)
+    
+    # Beispiel-Einstellungen
+    sample_settings = UserSettings(
+        user_id=user_id,
+        name="Max Mustermann",
+        email="max.mustermann@example.com",
+        phone="+49 123 4567890",
+        address="Musterstraße 1\n12345 Musterstadt",
+        created_at=datetime.utcnow()
+    )
+    db.session.add(sample_settings)
+    
+    db.session.commit()
+
+
 # ============================================================================
 # Authentication
 # ============================================================================
@@ -173,7 +226,21 @@ def admin_activate_user(user_id):
     user = User.query.get_or_404(user_id)
     user.is_active = True
     db.session.commit()
-    flash(f'Benutzer {user.email} wurde aktiviert.', 'success')
+    
+    # Beispieldaten für neuen Benutzer erstellen
+    # Prüfen ob Benutzer bereits Daten hat
+    has_data = (
+        Application.query.filter_by(user_id=user.id).count() > 0 or
+        Template.query.filter_by(user_id=user.id).count() > 0 or
+        UserSettings.query.filter_by(user_id=user.id).count() > 0
+    )
+    
+    if not has_data:
+        create_sample_data_for_user(user.id)
+        flash(f'Benutzer {user.email} wurde aktiviert und Beispieldaten wurden erstellt.', 'success')
+    else:
+        flash(f'Benutzer {user.email} wurde aktiviert.', 'success')
+    
     return redirect(url_for('admin_users'))
 
 
@@ -803,8 +870,9 @@ def logout():
 @login_required
 def index():
     """Dashboard mit Statistiken und letzten Bewerbungen"""
-    # Nur nicht-gelöschte Bewerbungen zählen
+    # Nur nicht-gelöschte Bewerbungen des aktuellen Benutzers zählen
     active_apps = Application.query.filter(
+        Application.user_id == current_user.id,
         db.or_(Application.is_deleted == False, Application.is_deleted == None)
     )
     stats = {
@@ -814,6 +882,7 @@ def index():
         'offers': active_apps.filter(Application.status == 'offer').count()
     }
     recent_applications = Application.query.filter(
+        Application.user_id == current_user.id,
         db.or_(Application.is_deleted == False, Application.is_deleted == None)
     ).order_by(
         Application.sent_date.desc().nullslast(),
@@ -831,8 +900,9 @@ def index():
 @login_required
 def applications_list():
     """Liste aller Bewerbungen mit Filtern"""
-    # Nur nicht-gelöschte Bewerbungen anzeigen
+    # Nur nicht-gelöschte Bewerbungen des aktuellen Benutzers anzeigen
     query = Application.query.filter(
+        Application.user_id == current_user.id,
         db.or_(Application.is_deleted == False, Application.is_deleted == None)
     )
     
@@ -887,6 +957,7 @@ def application_new():
     
     if form.validate_on_submit():
         application = Application(
+            user_id=current_user.id,
             company_name=form.company_name.data,
             job_title=form.job_title.data,
             sent_date=form.sent_date.data,
@@ -919,7 +990,7 @@ def application_new():
 @login_required
 def application_edit(id):
     """Bewerbung bearbeiten"""
-    application = Application.query.get_or_404(id)
+    application = Application.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     form = ApplicationForm(obj=application)
     
     if form.validate_on_submit():
@@ -954,7 +1025,7 @@ def application_edit(id):
 @login_required
 def application_delete(id):
     """Bewerbung löschen (Soft-Delete - Daten werden archiviert)"""
-    application = Application.query.get_or_404(id)
+    application = Application.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     
     # Bewerbungs-Daten archivieren
     app_data = {
@@ -1013,27 +1084,27 @@ def text_generator_page():
     template_id = request.args.get('template_id')
     
     if application_id:
-        application = Application.query.get(application_id)
+        application = Application.query.filter_by(id=application_id, user_id=current_user.id).first()
     
-    user_settings = UserSettings.query.first()
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
     
     # Platzhalter für die UI
     placeholders = text_generator.get_placeholder_list()
     
-    # Alle Vorlagen laden
-    templates = Template.query.order_by(Template.name).all()
+    # Alle Vorlagen des Benutzers laden
+    templates = Template.query.filter_by(user_id=current_user.id).order_by(Template.name).all()
     
     # Standard-Template bestimmen
     default_template = TextGenerator.DEFAULT_TEMPLATE
     selected_template = None
     
     if template_id:
-        selected_template = Template.query.get(template_id)
+        selected_template = Template.query.filter_by(id=template_id, user_id=current_user.id).first()
         if selected_template:
             default_template = selected_template.content
     elif templates:
         # Suche nach Standard-Vorlage
-        default_tpl = Template.query.filter_by(is_default=True).first()
+        default_tpl = Template.query.filter_by(user_id=current_user.id, is_default=True).first()
         if default_tpl:
             selected_template = default_tpl
             default_template = default_tpl.content
@@ -1108,7 +1179,7 @@ def api_save_letter():
     if not application_id:
         return jsonify({'success': False, 'error': 'Keine Bewerbungs-ID angegeben'})
     
-    application = Application.query.get(application_id)
+    application = Application.query.filter_by(id=application_id, user_id=current_user.id).first()
     if not application:
         return jsonify({'success': False, 'error': 'Bewerbung nicht gefunden'})
     
@@ -1350,10 +1421,10 @@ def delete_document(document_id):
 @login_required
 def settings():
     """Benutzereinstellungen"""
-    user_settings = UserSettings.query.first()
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
     
     if not user_settings:
-        user_settings = UserSettings()
+        user_settings = UserSettings(user_id=current_user.id)
         db.session.add(user_settings)
         db.session.commit()
     
@@ -1371,7 +1442,7 @@ def settings():
         return redirect(url_for('settings'))
     
     # Vorlagen laden
-    templates = Template.query.order_by(Template.name).all()
+    templates = Template.query.filter_by(user_id=current_user.id).order_by(Template.name).all()
     
     return render_template('settings.html', form=form, templates=templates)
 
@@ -1389,9 +1460,10 @@ def template_new():
     if form.validate_on_submit():
         # Wenn als Standard markiert, andere Standard-Markierungen entfernen
         if form.is_default.data:
-            Template.query.update({Template.is_default: False})
+            Template.query.filter_by(user_id=current_user.id).update({Template.is_default: False})
         
         template = Template(
+            user_id=current_user.id,
             name=form.name.data,
             description=form.description.data,
             content=form.content.data,
@@ -1413,13 +1485,13 @@ def template_new():
 @login_required
 def template_edit(id):
     """Vorlage bearbeiten"""
-    template = Template.query.get_or_404(id)
+    template = Template.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     form = TemplateForm(obj=template)
     
     if form.validate_on_submit():
         # Wenn als Standard markiert, andere Standard-Markierungen entfernen
         if form.is_default.data:
-            Template.query.filter(Template.id != id).update({Template.is_default: False})
+            Template.query.filter(Template.user_id == current_user.id, Template.id != id).update({Template.is_default: False})
         
         template.name = form.name.data
         template.description = form.description.data
@@ -1441,7 +1513,7 @@ def template_edit(id):
 @login_required
 def template_delete(id):
     """Vorlage löschen"""
-    template = Template.query.get_or_404(id)
+    template = Template.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     
     db.session.delete(template)
     db.session.commit()
@@ -1454,7 +1526,7 @@ def template_delete(id):
 @login_required
 def api_get_template(id):
     """API-Endpunkt zum Abrufen einer Vorlage"""
-    template = Template.query.get_or_404(id)
+    template = Template.query.filter_by(id=id, user_id=current_user.id).first_or_404()
     return jsonify({
         'success': True,
         'template': {
@@ -1474,8 +1546,8 @@ def api_get_template(id):
 @app.route('/export/csv')
 @login_required
 def export_csv():
-    """Exportiert alle Bewerbungen als CSV"""
-    applications = Application.query.order_by(Application.id).all()
+    """Exportiert alle Bewerbungen des Benutzers als CSV"""
+    applications = Application.query.filter_by(user_id=current_user.id).order_by(Application.id).all()
     
     # CSV erstellen
     output = io.StringIO()

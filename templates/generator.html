@@ -18,158 +18,36 @@
         border-radius: var(--radius-md) var(--radius-md) 0 0;
     }
     
-    .toolbar-group {
-        display: flex;
-        gap: 0.25rem;
-        padding-right: 0.75rem;
-        border-right: 1px solid var(--border-color);
-    }
-    
-    .toolbar-group:last-child {
-        border-right: none;
-        padding-right: 0;
-    }
-    
-    .toolbar-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-sm);
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.9rem;
-    }
-    
-    .toolbar-btn:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-        border-color: var(--accent-primary);
-    }
-    
-    .toolbar-btn.active {
-        background: rgba(0, 212, 170, 0.15);
-        color: var(--accent-primary);
-        border-color: var(--accent-primary);
-    }
-    
-    .toolbar-select {
-        height: 32px;
-        padding: 0 0.5rem;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        font-size: 0.8rem;
-        cursor: pointer;
-    }
-    
-    .toolbar-select:focus {
-        outline: none;
-        border-color: var(--accent-primary);
-    }
-    
-    /* Rich Text Editor Container */
-    .rich-editor-container {
-        border: 1px solid var(--border-color);
-        border-radius: 0 0 var(--radius-md) var(--radius-md);
-        overflow: hidden;
-    }
-    
-    .rich-editor {
-        min-height: 350px;
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        font-family: var(--font-sans);
-        font-size: 0.95rem;
-        line-height: 1.7;
-    }
-    
-    .rich-editor:focus {
-        outline: none;
-    }
-    
-    /* Quill Overrides */
     .ql-container {
-        border: none !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
         font-family: var(--font-sans) !important;
+        background: var(--bg-secondary);
     }
     
     .ql-editor {
-        min-height: 350px;
-        padding: 1rem;
+        min-height: 400px;
         color: var(--text-primary);
         font-size: 0.95rem;
         line-height: 1.7;
     }
-    
-    .ql-editor.ql-blank::before {
-        color: var(--text-muted);
-        font-style: normal;
-    }
-    
+
     .ql-toolbar {
-        border: none !important;
-        background: var(--bg-tertiary);
-        border-bottom: 1px solid var(--border-color) !important;
-        padding: 0.75rem !important;
+        background: var(--bg-tertiary) !important;
+        border-color: var(--border-color) !important;
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
     }
-    
-    .ql-toolbar .ql-stroke {
-        stroke: var(--text-secondary);
-    }
-    
-    .ql-toolbar .ql-fill {
-        fill: var(--text-secondary);
-    }
-    
-    .ql-toolbar .ql-picker {
-        color: var(--text-secondary);
-    }
-    
-    .ql-toolbar .ql-picker-options {
-        background: var(--bg-secondary);
-        border-color: var(--border-color);
-    }
-    
-    .ql-toolbar .ql-picker-item:hover {
-        color: var(--accent-primary);
-    }
-    
-    .ql-toolbar button:hover .ql-stroke,
-    .ql-toolbar button.ql-active .ql-stroke {
-        stroke: var(--accent-primary);
-    }
-    
-    .ql-toolbar button:hover .ql-fill,
-    .ql-toolbar button.ql-active .ql-fill {
-        fill: var(--accent-primary);
-    }
-    
-    .ql-toolbar button:hover,
-    .ql-toolbar button.ql-active {
-        color: var(--accent-primary);
-    }
-    
-    .ql-snow .ql-picker.ql-expanded .ql-picker-label {
-        border-color: var(--accent-primary);
-    }
-    
-    .ql-snow .ql-picker.ql-expanded .ql-picker-options {
-        border-color: var(--border-color);
-    }
-    
+
+    .ql-snow .ql-stroke { stroke: var(--text-secondary) !important; }
+    .ql-snow .ql-fill { fill: var(--text-secondary) !important; }
+    .ql-snow .ql-picker { color: var(--text-secondary) !important; }
+
     /* PDF Preview Styles */
     .pdf-preview-container {
-        background: #e8e8e8;
+        background: var(--bg-tertiary);
         border-radius: var(--radius-md);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-color);
         overflow: hidden;
-        position: relative;
     }
     
     .pdf-preview-header {
@@ -181,180 +59,12 @@
         border-bottom: 1px solid var(--border-color);
     }
     
-    .pdf-preview-title {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-    }
-    
-    .pdf-preview-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .pdf-pages-container {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        align-items: center;
-    }
-    
-    .pdf-page {
-        background: #fff;
-        color: #000;
-        width: 210mm;
-        height: 297mm;
-        padding: 27mm 20mm 25mm 25mm;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        font-size: 11pt;
-        line-height: 1.5;
-        position: relative;
-        transform-origin: top left;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        box-sizing: border-box;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-    
-    .pdf-page + .pdf-page {
-        margin-top: 20px;
-    }
-    
-    .pdf-sender-block {
-        position: absolute;
-        top: 27mm;
-        right: 20mm;
-        text-align: right;
-        font-size: 10pt;
-        line-height: 1.4;
-    }
-    
-    .pdf-sender-line {
-        font-size: 7pt;
-        color: #666;
-        border-bottom: 0.5px solid #666;
-        padding-bottom: 2px;
-        display: inline-block;
-        margin-top: 18mm;
-    }
-    
-    .pdf-recipient {
-        margin-top: 5mm;
-        margin-bottom: 10mm;
-        font-size: 11pt;
-        line-height: 1.4;
-        min-height: 40mm;
-    }
-    
-    .pdf-date {
-        text-align: right;
-        margin-bottom: 15mm;
-        font-size: 11pt;
-    }
-    
-    .pdf-subject {
-        font-weight: bold;
-        margin-bottom: 8mm;
-        font-size: 11pt;
-    }
-    
-    .pdf-body {
-        font-size: 11pt;
-        line-height: 1.6;
-        text-align: justify;
-    }
-    
-    .pdf-body p {
-        margin-bottom: 0.8em;
-    }
-    
-    .pdf-body ul, .pdf-body ol {
-        margin-left: 5mm;
-        margin-bottom: 0.8em;
-        padding-left: 5mm;
-    }
-    
-    .pdf-body li {
-        margin-bottom: 0.3em;
-    }
-    
-    /* Folgeseiten - nur Text, kein Briefkopf */
-    .pdf-page-continuation {
-        background: #fff;
-        color: #000;
-        width: 210mm;
-        height: 297mm;
-        padding: 25mm 20mm 25mm 25mm;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        font-size: 11pt;
-        line-height: 1.6;
-        position: relative;
-        transform-origin: top left;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        box-sizing: border-box;
-        overflow: hidden;
-        flex-shrink: 0;
-        text-align: justify;
-    }
-    
-    .pdf-page-number {
-        position: absolute;
-        bottom: 10mm;
-        right: 20mm;
-        font-size: 9pt;
-        color: #666;
-    }
-    
-    .pdf-page-label {
-        text-align: center;
-        color: #666;
-        font-size: 11px;
-        margin-top: 5px;
-        margin-bottom: 10px;
-    }
-    
-    /* Preview Scale Controls */
-    .preview-scale-controls {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-    
-    .scale-btn {
-        width: 28px;
-        height: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-sm);
-        color: var(--text-secondary);
-        cursor: pointer;
-        font-size: 0.8rem;
-    }
-    
-    .scale-btn:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-    }
-    
-    .scale-value {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        min-width: 40px;
-        text-align: center;
-    }
-    
-    /* Margin Settings */
     .margin-settings {
         display: flex;
         flex-wrap: wrap;
         gap: 0.75rem;
         padding: 0.75rem 1rem;
-        background: var(--bg-tertiary);
+        background: var(--bg-secondary);
         border-bottom: 1px solid var(--border-color);
     }
     
@@ -364,488 +74,223 @@
         gap: 0.35rem;
     }
     
-    .margin-label {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        white-space: nowrap;
-    }
-    
     .margin-input {
         width: 50px;
         height: 26px;
-        padding: 0 0.35rem;
-        background: var(--bg-secondary);
+        background: var(--bg-tertiary);
         border: 1px solid var(--border-color);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
-        font-size: 0.75rem;
         text-align: center;
+        font-size: 0.8rem;
     }
-    
-    .margin-input:focus {
-        outline: none;
-        border-color: var(--accent-primary);
-    }
-    
-    .margin-unit {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-    }
-    
+
     .margin-preset-btn {
-        padding: 0.25rem 0.5rem;
-        background: var(--bg-secondary);
+        padding: 0.2rem 0.5rem;
+        background: var(--bg-tertiary);
         border: 1px solid var(--border-color);
         border-radius: var(--radius-sm);
         color: var(--text-secondary);
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         cursor: pointer;
-        transition: all 0.2s ease;
     }
-    
-    .margin-preset-btn:hover {
-        background: var(--bg-hover);
-        color: var(--text-primary);
-        border-color: var(--accent-primary);
-    }
-    
+
     .margin-preset-btn.active {
-        background: rgba(0, 212, 170, 0.15);
-        color: var(--accent-primary);
         border-color: var(--accent-primary);
+        color: var(--accent-primary);
+        background: rgba(0, 212, 170, 0.1);
     }
-    
-    /* Preview Wrapper for Scrolling */
-    .pdf-preview-wrapper {
-        max-height: 800px;
-        overflow: auto;
-        background: #d0d0d0;
-        padding: 20px;
-    }
-    
-    .pdf-preview-scaler {
-        transform-origin: top center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 20px;
-    }
-    
-    /* Tab Navigation */
+
+    /* Tabs */
     .editor-tabs {
         display: flex;
-        gap: 0;
-        margin-bottom: 0;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--border-color);
     }
     
     .editor-tab {
         padding: 0.75rem 1.5rem;
-        background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
-        border-bottom: none;
+        background: none;
+        border: none;
         color: var(--text-secondary);
         cursor: pointer;
-        font-size: 0.9rem;
         font-weight: 500;
-        transition: all 0.2s ease;
-        border-radius: var(--radius-md) var(--radius-md) 0 0;
-        margin-right: -1px;
-    }
-    
-    .editor-tab:hover {
-        color: var(--text-primary);
-        background: var(--bg-hover);
+        border-bottom: 2px solid transparent;
     }
     
     .editor-tab.active {
-        background: var(--bg-secondary);
         color: var(--accent-primary);
-        border-color: var(--accent-primary);
-        border-bottom-color: var(--bg-secondary);
-        position: relative;
-        z-index: 1;
+        border-bottom-color: var(--accent-primary);
     }
     
-    .tab-content {
-        display: none;
-    }
-    
-    .tab-content.active {
-        display: block;
-    }
-    
-    /* Layout Adjustments */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
     .generator-layout {
         display: grid;
-        grid-template-columns: 400px 1fr;
+        grid-template-columns: 350px 1fr;
         gap: 1.5rem;
     }
-    
-    @media (max-width: 1200px) {
-        .generator-layout {
-            grid-template-columns: 1fr;
-        }
+
+    @media (max-width: 1000px) {
+        .generator-layout { grid-template-columns: 1fr; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">
-        <i class="bi bi-file-earmark-text"></i>
-        Textgenerator
-    </h1>
-    {% if application %}
-    <span class="badge badge-sent" style="font-size: 0.9rem; padding: 0.5rem 1rem;">
-        <i class="bi bi-link-45deg"></i>
-        Verknüpft mit: {{ application.company_name }}
-    </span>
-    {% endif %}
+    <h1 class="page-title"><i class="bi bi-file-earmark-text"></i> Textgenerator</h1>
 </div>
 
 <div class="generator-layout">
-    <!-- Left Column: Input Form -->
-    <div class="card fade-in">
+    <!-- Left: Inputs -->
+    <div class="card">
         <div class="card-header">
-            <h2 class="card-title">
-                <i class="bi bi-input-cursor-text"></i>
-                Eingaben
-            </h2>
+            <h2 class="card-title"><i class="bi bi-pencil"></i> Eingaben</h2>
         </div>
-        
-        <form id="generatorForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Unternehmen</label>
-                    <input type="text" name="company" class="form-control" 
-                           value="{{ application.company_name if application else '' }}"
-                           placeholder="z.B. Beispiel GmbH">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Stellenbezeichnung</label>
-                    <input type="text" name="job_title" class="form-control"
-                           value="{{ application.job_title if application else '' }}"
-                           placeholder="z.B. Projektmanager (m/w/d)">
-                </div>
+        <form id="generatorForm" class="p-3">
+            <div class="form-group mb-3">
+                <label class="form-label">Unternehmen</label>
+                <input type="text" name="company" class="form-control" placeholder="z.B. Beispiel GmbH" value="{{ application.company_name if application else '' }}">
             </div>
-            
-            <div class="form-group">
+            <div class="form-group mb-3">
+                <label class="form-label">Stellenbezeichnung</label>
+                <input type="text" name="job_title" class="form-control" placeholder="z.B. Projektmanager" value="{{ application.job_title if application else '' }}">
+            </div>
+            <div class="form-group mb-3">
                 <label class="form-label">Unternehmensadresse</label>
-                <textarea name="company_address" class="form-control" rows="3"
-                          placeholder="Straße&#10;PLZ Ort">{{ application.company_address if application else '' }}</textarea>
+                <textarea name="company_address" class="form-control" rows="3" placeholder="Straße\nPLZ Ort"></textarea>
             </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Ansprechpartner (optional)</label>
-                    <input type="text" name="contact_person" class="form-control"
-                           value="{{ application.contact_person if application else '' }}"
-                           placeholder="z.B. Frau Müller">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Datum</label>
-                    <input type="date" name="date" class="form-control"
-                           value="{{ today }}">
-                </div>
+            <div class="form-group mb-3">
+                <label class="form-label">Ansprechpartner</label>
+                <input type="text" name="contact_person" class="form-control" placeholder="z.B. Frau Müller">
             </div>
-            
-            <div class="form-group">
-                <label class="form-label">Betreff (optional, wird automatisch generiert)</label>
-                <input type="text" name="subject" class="form-control"
-                       placeholder="Bewerbung als [Stellenbezeichnung]">
+            <div class="form-group mb-3">
+                <label class="form-label">Datum</label>
+                <input type="date" name="date" class="form-control" value="{{ now().strftime('%Y-%m-%d') }}">
             </div>
-            
-            <hr style="border-color: var(--border-color); margin: 1.5rem 0;">
-            
-            <h3 style="font-size: 1rem; margin-bottom: 1rem; color: var(--text-secondary);">
-                <i class="bi bi-person"></i> Ihre Daten
-            </h3>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Ihr Name</label>
-                    <input type="text" name="your_name" class="form-control"
-                           value="{{ user_settings.your_name or '' }}"
-                           placeholder="Max Mustermann">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Ihre E-Mail</label>
-                    <input type="email" name="your_email" class="form-control"
-                           value="{{ user_settings.your_email or '' }}"
-                           placeholder="max@beispiel.de">
-                </div>
+            <hr class="my-4" style="border-color: var(--border-color);">
+            <h3 class="h6 mb-3">Ihre Daten</h3>
+            <div class="form-group mb-2">
+                <label class="form-label small">Name</label>
+                <input type="text" name="your_name" class="form-control form-control-sm" value="{{ user_settings.your_name or '' }}">
             </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">Ihre Adresse</label>
-                    <textarea name="your_address" class="form-control" rows="2"
-                              placeholder="Straße, PLZ Ort">{{ user_settings.your_address or '' }}</textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Ihre Telefonnummer</label>
-                    <input type="tel" name="your_phone" class="form-control"
-                           value="{{ user_settings.your_phone or '' }}"
-                           placeholder="+49 123 456789">
-                </div>
+            <div class="form-group mb-2">
+                <label class="form-label small">E-Mail</label>
+                <input type="email" name="your_email" class="form-control form-control-sm" value="{{ user_settings.your_email or '' }}">
+            </div>
+            <div class="form-group mb-2">
+                <label class="form-label small">Adresse</label>
+                <textarea name="your_address" class="form-control form-control-sm" rows="2">{{ user_settings.your_address or '' }}</textarea>
+            </div>
+            <div class="form-group mb-2">
+                <label class="form-label small">Telefon</label>
+                <input type="tel" name="your_phone" class="form-control form-control-sm" value="{{ user_settings.your_phone or '' }}">
             </div>
         </form>
     </div>
-    
-    <!-- Right Column: Editor & Preview -->
-    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <!-- Template Selection & Editor -->
-        <div class="card fade-in" style="animation-delay: 0.1s;">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="bi bi-code-square"></i>
-                    Textvorlage
-                </h2>
-                <div style="display: flex; gap: 0.5rem; align-items: center;">
-                    {% if templates %}
-                    <select id="templateSelect" class="form-control" style="width: auto; min-width: 200px;" onchange="loadTemplate(this.value)">
-                        <option value="">-- Vorlage wählen --</option>
-                        {% for tpl in templates %}
-                        <option value="{{ tpl.id }}">
-                            {{ tpl.name }}{% if tpl.is_default %} ★{% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                    {% endif %}
-                    <a href="{{ url_for('template_new') }}" class="btn btn-secondary btn-sm">
-                        <i class="bi bi-plus-lg"></i>
-                        Vorlage erstellen
-                    </a>
-                </div>
+
+    <!-- Right: Editor & Preview -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2 class="card-title"><i class="bi bi-file-text"></i> Anschreiben</h2>
+            <div class="d-flex gap-2">
+                <select id="templateSelect" class="form-select form-select-sm" style="width: auto;" onchange="loadTemplate(this.value)">
+                    <option value="">-- Vorlage wählen --</option>
+                    {% for t in templates %}<option value="{{ t.id }}">{{ t.name }}</option>{% endfor %}
+                </select>
+                <a href="{{ url_for('template_new') }}" class="btn btn-secondary btn-sm"><i class="bi bi-plus"></i></a>
             </div>
-            
-            <!-- Placeholder Tags -->
-            <div class="placeholder-tags">
-                {% for placeholder in placeholders %}
-                <span class="placeholder-tag" onclick="insertPlaceholder('{{ placeholder }}')">{{ placeholder }}</span>
-                {% endfor %}
-            </div>
-            
-            <!-- Tab Navigation -->
+        </div>
+
+        <div class="p-3">
             <div class="editor-tabs">
-                <button class="editor-tab active" onclick="switchTab('editor')">
-                    <i class="bi bi-pencil-square"></i> Editor
-                </button>
-                <button class="editor-tab" onclick="switchTab('preview')">
-                    <i class="bi bi-eye"></i> PDF Vorschau
-                </button>
+                <button class="editor-tab active" onclick="switchTab('editor')"><i class="bi bi-pencil-square"></i> Editor</button>
+                <button class="editor-tab" onclick="switchTab('preview')"><i class="bi bi-eye"></i> PDF Vorschau</button>
             </div>
-            
-            <!-- Editor Tab -->
+
             <div id="editorTab" class="tab-content active">
                 <div id="templateEditor"></div>
             </div>
-            
-            <!-- Preview Tab -->
+
             <div id="previewTab" class="tab-content">
                 <div class="pdf-preview-container">
-                    <div class="pdf-preview-header">
-                        <span class="pdf-preview-title">
-                            <i class="bi bi-file-earmark-pdf"></i>
-                            Echte PDF Vorschau
-                        </span>
-                        <div class="preview-scale-controls">
-                            <button class="scale-btn" onclick="changePreviewScale(-10)">
-                                <i class="bi bi-dash"></i>
-                            </button>
-                            <span class="scale-value" id="scaleValue">50%</span>
-                            <button class="scale-btn" onclick="changePreviewScale(10)">
-                                <i class="bi bi-plus"></i>
-                            </button>
-                            <button class="btn btn-secondary btn-sm" onclick="updatePDFPreview()" style="margin-left: 10px;">
-                                <i class="bi bi-arrow-clockwise"></i> Aktualisieren
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Margin Settings -->
                     <div class="margin-settings">
                         <div class="margin-group">
-                            <span class="margin-label">Oben:</span>
-                            <input type="number" class="margin-input" id="marginTop" value="27" min="10" max="50">
-                            <span class="margin-unit">mm</span>
+                            <span class="small text-muted">Oben:</span>
+                            <input type="number" id="marginTop" class="margin-input" value="27">
                         </div>
                         <div class="margin-group">
-                            <span class="margin-label">Unten:</span>
-                            <input type="number" class="margin-input" id="marginBottom" value="25" min="10" max="50">
-                            <span class="margin-unit">mm</span>
+                            <span class="small text-muted">Unten:</span>
+                            <input type="number" id="marginBottom" class="margin-input" value="25">
                         </div>
                         <div class="margin-group">
-                            <span class="margin-label">Links:</span>
-                            <input type="number" class="margin-input" id="marginLeft" value="25" min="10" max="50">
-                            <span class="margin-unit">mm</span>
+                            <span class="small text-muted">Links:</span>
+                            <input type="number" id="marginLeft" class="margin-input" value="25">
                         </div>
                         <div class="margin-group">
-                            <span class="margin-label">Rechts:</span>
-                            <input type="number" class="margin-input" id="marginRight" value="20" min="10" max="50">
-                            <span class="margin-unit">mm</span>
+                            <span class="small text-muted">Rechts:</span>
+                            <input type="number" id="marginRight" class="margin-input" value="20">
                         </div>
-                        <div class="margin-group" style="margin-left: auto;">
-                            <button class="margin-preset-btn active" onclick="setMarginPreset('din5008')" title="DIN 5008 Standard">DIN 5008</button>
-                            <button class="margin-preset-btn" onclick="setMarginPreset('schmal')" title="Schmale Ränder">Schmal</button>
-                            <button class="margin-preset-btn" onclick="setMarginPreset('breit')" title="Breite Ränder">Breit</button>
+                        <div class="ms-auto d-flex gap-1">
+                            <button class="margin-preset-btn active" onclick="setMarginPreset('din5008')">DIN 5008</button>
+                            <button class="margin-preset-btn" onclick="setMarginPreset('schmal')">Schmal</button>
                         </div>
                     </div>
-                    <div class="pdf-preview-wrapper">
-                        <div id="pdfPreviewScaler" class="pdf-preview-scaler" style="transform: scale(0.5);">
-                            <!-- PDF Pages will be rendered here as canvas elements -->
-                            <div id="pdfPreview">
-                                <div class="pdf-loading" style="text-align: center; padding: 40px; color: #666;">
-                                    <i class="bi bi-file-earmark-pdf" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
-                                    Klicken Sie auf "Aktualisieren" um die PDF-Vorschau zu laden
-                                </div>
-                            </div>
-                        </div>
+                    <div style="height: 800px; background: #525659;">
+                        <iframe id="pdfFrame" style="width: 100%; height: 100%; border: none;"></iframe>
                     </div>
                 </div>
             </div>
-            
-            <!-- Action Buttons -->
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
-                <button type="button" class="btn btn-primary" onclick="generateText()">
-                    <i class="bi bi-lightning"></i>
-                    Text generieren
-                </button>
-                <button type="button" class="btn btn-secondary" onclick="copyToClipboard()">
-                    <i class="bi bi-clipboard"></i>
-                    Kopieren
-                </button>
+
+            <div class="mt-3 d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary" onclick="generateText()"><i class="bi bi-lightning"></i> Generieren</button>
+                <button class="btn btn-secondary" onclick="copyToClipboard()"><i class="bi bi-clipboard"></i> Kopieren</button>
+                <button class="btn btn-primary" onclick="exportPDF()"><i class="bi bi-file-pdf"></i> PDF Download</button>
                 {% if application %}
-                <button type="button" class="btn btn-secondary" onclick="saveLetter()">
-                    <i class="bi bi-save"></i>
-                    Speichern
-                </button>
+                <button class="btn btn-secondary" onclick="saveLetter()"><i class="bi bi-save"></i> Speichern</button>
                 {% endif %}
-                <button type="button" class="btn btn-primary" onclick="exportPDF()" id="exportPdfBtn">
-                    <i class="bi bi-file-earmark-pdf"></i>
-                    PDF herunterladen
-                </button>
             </div>
-            
-            {% if not application %}
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                <button type="button" class="btn btn-secondary" onclick="saveAsDraft()" style="width: 100%;">
-                    <i class="bi bi-bookmark-plus"></i>
-                    Als Entwurf in Bewerbungen speichern
-                </button>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
 
-<!-- Toast Notification -->
-<div id="toast" style="
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    padding: 1rem 1.5rem;
-    background: var(--bg-secondary);
-    border: 1px solid var(--accent-success);
-    border-radius: var(--radius-md);
-    color: var(--accent-success);
-    display: none;
-    align-items: center;
-    gap: 0.5rem;
-    box-shadow: var(--shadow-card);
-    z-index: 3000;
-">
-    <i class="bi bi-check-circle"></i>
-    <span id="toastMessage">Erfolgreich kopiert!</span>
+<!-- Toast -->
+<div id="toast" style="position: fixed; bottom: 2rem; right: 2rem; padding: 1rem; border-radius: var(--radius-md); display: none; z-index: 9999; background: var(--bg-secondary); border: 1px solid var(--accent-primary);">
+    <span id="toastMessage"></span>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<!-- Quill.js -->
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
-
 <script>
-// PDF.js wird nur bei Bedarf geladen
-let pdfJsLoaded = false;
-
-async function loadPdfJs() {
-    if (pdfJsLoaded) return true;
-    
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-        script.onload = () => {
-            pdfJsLoaded = true;
-            resolve(true);
-        };
-        script.onerror = () => reject(new Error('PDF.js konnte nicht geladen werden'));
-        document.head.appendChild(script);
-    });
-}
-</script>
-
-<script>
-// Initialize Quill Editor
+// Initialize Quill
 const quill = new Quill('#templateEditor', {
     theme: 'snow',
-    placeholder: 'Schreiben Sie hier Ihren Bewerbungstext oder wählen Sie eine Vorlage aus...',
+    placeholder: 'Text hier eingeben...',
     modules: {
         toolbar: [
-            [{ 'font': [] }],
-            [{ 'size': ['small', false, 'large', 'huge'] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ 'color': [] }, { 'background': [] }],
+            ['bold', 'italic', 'underline'],
             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-            [{ 'indent': '-1'}, { 'indent': '+1' }],
             [{ 'align': [] }],
             ['clean']
         ]
     }
 });
 
-// Editor startet leer - Vorlagen können über das Dropdown geladen werden
-// Die Briefkopf-Daten (Name, Adresse, etc.) werden aus dem Formular links übernommen
-
-// Preview scale
-let previewScale = 50;
-
-// Margin settings (in mm)
-let pdfMargins = {
-    top: 27,
-    bottom: 25,
-    left: 25,
-    right: 20
-};
-
-function changePreviewScale(delta) {
-    previewScale = Math.max(25, Math.min(100, previewScale + delta));
-    document.getElementById('scaleValue').textContent = previewScale + '%';
-    document.getElementById('pdfPreviewScaler').style.transform = `scale(${previewScale / 100})`;
-}
-
-function setMarginPreset(preset) {
-    // Update active button
-    document.querySelectorAll('.margin-preset-btn').forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
+function switchTab(tab) {
+    document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
-    switch(preset) {
-        case 'din5008':
-            pdfMargins = { top: 27, bottom: 25, left: 25, right: 20 };
-            break;
-        case 'schmal':
-            pdfMargins = { top: 20, bottom: 20, left: 20, right: 15 };
-            break;
-        case 'breit':
-            pdfMargins = { top: 30, bottom: 30, left: 30, right: 25 };
-            break;
+    if (tab === 'editor') {
+        document.querySelector('[onclick="switchTab(\'editor\')"]').classList.add('active');
+        document.getElementById('editorTab').classList.add('active');
+    } else {
+        document.querySelector('[onclick="switchTab(\'preview\')"]').classList.add('active');
+        document.getElementById('previewTab').classList.add('active');
+        updatePDFPreview();
     }
-    
-    // Update input fields
-    document.getElementById('marginTop').value = pdfMargins.top;
-    document.getElementById('marginBottom').value = pdfMargins.bottom;
-    document.getElementById('marginLeft').value = pdfMargins.left;
-    document.getElementById('marginRight').value = pdfMargins.right;
-    
-    updatePDFPreview();
 }
 
 function getMargins() {
@@ -857,430 +302,105 @@ function getMargins() {
     };
 }
 
-function switchTab(tab) {
-    // Update tab buttons
-    document.querySelectorAll('.editor-tab').forEach(btn => btn.classList.remove('active'));
-    event.target.closest('.editor-tab').classList.add('active');
-    
-    // Update tab content
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    if (tab === 'editor') {
-        document.getElementById('editorTab').classList.add('active');
+function setMarginPreset(preset) {
+    document.querySelectorAll('.margin-preset-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+    if (preset === 'din5008') {
+        document.getElementById('marginTop').value = 27;
+        document.getElementById('marginBottom').value = 25;
+        document.getElementById('marginLeft').value = 25;
+        document.getElementById('marginRight').value = 20;
     } else {
-        document.getElementById('previewTab').classList.add('active');
-        updatePDFPreview();
+        document.getElementById('marginTop').value = 20;
+        document.getElementById('marginBottom').value = 20;
+        document.getElementById('marginLeft').value = 20;
+        document.getElementById('marginRight').value = 15;
     }
+    updatePDFPreview();
 }
+
+let currentPdfUrl = null;
 
 async function updatePDFPreview() {
-    const preview = document.getElementById('pdfPreview');
-    
-    // Zeige Ladeindikator
-    preview.innerHTML = `
-        <div style="text-align: center; padding: 60px; color: #666;">
-            <div class="spinner-border" role="status" style="width: 3rem; height: 3rem; border-color: var(--accent-primary); border-right-color: transparent;">
-                <span class="visually-hidden">Lädt...</span>
-            </div>
-            <div style="margin-top: 15px;">PDF wird generiert...</div>
-        </div>
-    `;
-    
+    const iframe = document.getElementById('pdfFrame');
     const data = getFormData();
-    const htmlContent = getEditorContent();
-    const margins = getMargins();
+    const htmlContent = quill.root.innerHTML;
     
-    // Convert HTML to plain text
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-    const bodyText = tempDiv.innerText || tempDiv.textContent;
-    
-    if (!bodyText.trim()) {
-        preview.innerHTML = `
-            <div style="text-align: center; padding: 60px; color: #666;">
-                <i class="bi bi-file-earmark-text" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
-                Bitte geben Sie Text im Editor ein
-            </div>
-        `;
+    if (quill.getText().trim().length < 2) {
+        iframe.srcdoc = '<body style="background:#525659;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif">Bitte Text eingeben...</body>';
         return;
     }
-    
-    // Prepare data for PDF preview
-    const pdfData = {
-        ...data,
-        body_text: bodyText,
-        html_content: htmlContent,
-        margins: margins
-    };
-    
-    // Auto-generate subject if empty
-    if (!pdfData.subject && pdfData.job_title) {
-        pdfData.subject = 'Bewerbung als ' + pdfData.job_title;
-    }
-    
+
     try {
-        // PDF.js laden falls noch nicht geschehen
-        await loadPdfJs();
-        
-        // PDF vom Server holen
         const response = await fetch('/api/preview-pdf', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(pdfData)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...data, html_content: htmlContent, body_text: quill.getText(), margins: getMargins() })
         });
         
-        if (!response.ok) {
-            throw new Error('PDF-Generierung fehlgeschlagen');
-        }
-        
-        const pdfBlob = await response.blob();
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        
-        // PDF.js Worker konfigurieren
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
-        // PDF laden
-        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-        const numPages = pdf.numPages;
-        
-        // Preview leeren
-        preview.innerHTML = '';
-        
-        // Alle Seiten rendern
-        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            
-            // A4 bei 150 DPI für gute Qualität
-            const scale = 150 / 72; // 72 DPI ist PDF-Standard
-            const viewport = page.getViewport({ scale: scale });
-            
-            // Canvas erstellen
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            canvas.style.cssText = `
-                display: block;
-                background: white;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-                margin-bottom: 20px;
-            `;
-            
-            // Seite rendern
-            const context = canvas.getContext('2d');
-            await page.render({
-                canvasContext: context,
-                viewport: viewport
-            }).promise;
-            
-            preview.appendChild(canvas);
-            
-            // Seitenlabel
-            if (numPages > 1) {
-                const label = document.createElement('div');
-                label.className = 'pdf-page-label';
-                label.textContent = `Seite ${pageNum} von ${numPages}`;
-                preview.appendChild(label);
-            }
-        }
-        
-        // URL freigeben
-        URL.revokeObjectURL(pdfUrl);
-        
-    } catch (error) {
-        console.error('PDF Preview Error:', error);
-        preview.innerHTML = `
-            <div style="text-align: center; padding: 60px; color: #e74c3c;">
-                <i class="bi bi-exclamation-triangle" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
-                Fehler beim Laden der Vorschau<br>
-                <small style="color: #666;">${error.message}</small>
-            </div>
-    }
-}
-
-function insertPlaceholder(placeholder) {
-    const range = quill.getSelection(true);
-    quill.insertText(range.index, placeholder);
-    quill.setSelection(range.index + placeholder.length);
-}
-
-async function loadTemplate(templateId) {
-    if (!templateId) return;
-    
-    try {
-        const response = await fetch('/api/templates/' + templateId);
-        const result = await response.json();
-        
-        if (result.success) {
-            quill.root.innerHTML = result.template.content.replace(/\n/g, '<br>');
-            showToast('Vorlage "' + result.template.name + '" geladen');
-        }
-    } catch (error) {
-        showToast('Fehler beim Laden der Vorlage', 'error');
+        const blob = await response.blob();
+        if (currentPdfUrl) URL.revokeObjectURL(currentPdfUrl);
+        currentPdfUrl = URL.createObjectURL(blob);
+        iframe.src = currentPdfUrl;
+    } catch (e) {
+        console.error(e);
     }
 }
 
 function getFormData() {
-    const form = document.getElementById('generatorForm');
-    const formData = new FormData(form);
-    const data = {};
-    formData.forEach((value, key) => {
-        data[key] = value;
-    });
-    return data;
+    const f = new FormData(document.getElementById('generatorForm'));
+    const d = {};
+    f.forEach((v, k) => d[k] = v);
+    return d;
 }
 
-function getEditorContent() {
-    // Get HTML content from Quill
-    return quill.root.innerHTML;
-}
-
-function getPlainTextContent() {
-    // Get plain text from Quill
-    return quill.getText();
+async function loadTemplate(id) {
+    if (!id) return;
+    const r = await fetch('/api/templates/' + id);
+    const res = await r.json();
+    if (res.success) {
+        quill.root.innerHTML = res.template.content.replace(/\n/g, '<br>');
+        showToast('Vorlage geladen');
+    }
 }
 
 async function generateText() {
-    const data = getFormData();
-    const content = getEditorContent();
-    
-    // Replace placeholders
-    let renderedContent = content;
-    renderedContent = renderedContent.replace(/\{\{company\}\}/g, data.company || '');
-    renderedContent = renderedContent.replace(/\{\{company_address\}\}/g, (data.company_address || '').replace(/\n/g, '<br>'));
-    renderedContent = renderedContent.replace(/\{\{job_title\}\}/g, data.job_title || '');
-    renderedContent = renderedContent.replace(/\{\{contact_person\}\}/g, data.contact_person || '');
-    renderedContent = renderedContent.replace(/\{\{your_name\}\}/g, data.your_name || '');
-    renderedContent = renderedContent.replace(/\{\{your_address\}\}/g, (data.your_address || '').replace(/\n/g, '<br>'));
-    renderedContent = renderedContent.replace(/\{\{your_email\}\}/g, data.your_email || '');
-    renderedContent = renderedContent.replace(/\{\{your_phone\}\}/g, data.your_phone || '');
-    
-    // Format date
-    let dateStr = data.date;
-    if (dateStr) {
-        const dateObj = new Date(dateStr);
-        dateStr = dateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    renderedContent = renderedContent.replace(/\{\{date\}\}/g, dateStr || '');
-    
-    // Subject
-    const subject = data.subject || (data.job_title ? `Bewerbung als ${data.job_title}` : '');
-    renderedContent = renderedContent.replace(/\{\{subject\}\}/g, subject);
-    
-    // Update editor with rendered content
-    quill.root.innerHTML = renderedContent;
-    
-    showToast('Text erfolgreich generiert!');
-    
-    // Switch to preview tab
-    document.querySelectorAll('.editor-tab').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.editor-tab')[1].classList.add('active');
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    document.getElementById('previewTab').classList.add('active');
-    updatePDFPreview();
-}
-
-async function exportPDF() {
-    const data = getFormData();
-    const htmlContent = getEditorContent();
-    const margins = getMargins();
-    
-    // Convert HTML to plain text with formatting markers
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlContent;
-    const bodyText = tempDiv.innerText || tempDiv.textContent;
-    
-    if (!bodyText.trim()) {
-        showToast('Bitte zuerst Text eingeben!', 'warning');
-        return;
-    }
-    
-    // Prepare data for PDF export
-    const pdfData = {
-        ...data,
-        body_text: bodyText,
-        html_content: htmlContent,
-        margins: margins
-    };
-    
-    // Auto-generate subject if empty
-    if (!pdfData.subject && pdfData.job_title) {
-        pdfData.subject = 'Bewerbung als ' + pdfData.job_title;
-    }
-    
-    try {
-        showToast('PDF wird erstellt...', 'info');
-        
-        const response = await fetch('/api/export-pdf', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(pdfData)
-        });
-        
-        if (response.ok) {
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            
-            const contentDisposition = response.headers.get('Content-Disposition');
-            let filename = 'Bewerbung.pdf';
-            if (contentDisposition) {
-                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-                if (filenameMatch && filenameMatch[1]) {
-                    filename = filenameMatch[1].replace(/['"]/g, '');
-                }
-            }
-            
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-            
-            showToast('PDF erfolgreich heruntergeladen!');
-        } else {
-            const error = await response.json();
-            showToast('Fehler: ' + (error.error || 'PDF konnte nicht erstellt werden'), 'error');
-        }
-    } catch (error) {
-        showToast('Fehler beim PDF-Export: ' + error.message, 'error');
+    showToast('Generiere...', 'info');
+    const response = await fetch('/api/generate-text', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...getFormData(), current_content: quill.root.innerHTML })
+    });
+    const res = await response.json();
+    if (res.success) {
+        quill.root.innerHTML = res.text.replace(/\n/g, '<br>');
+        showToast('Text bereit!');
     }
 }
 
 function copyToClipboard() {
-    const text = getPlainTextContent();
-    if (!text.trim()) {
-        showToast('Kein Text zum Kopieren vorhanden!', 'warning');
-        return;
-    }
-    
-    navigator.clipboard.writeText(text).then(() => {
-        showToast('In Zwischenablage kopiert!');
-    }).catch(err => {
-        showToast('Fehler beim Kopieren', 'error');
+    navigator.clipboard.writeText(quill.getText()).then(() => showToast('Kopiert!'));
+}
+
+async function exportPDF() {
+    const response = await fetch('/api/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...getFormData(), html_content: quill.root.innerHTML, body_text: quill.getText(), margins: getMargins() })
     });
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Bewerbung.pdf';
+    a.click();
 }
 
-async function saveAsDraft() {
-    const data = getFormData();
-    const htmlContent = getEditorContent();
-    const template = quill.root.innerHTML;
-    
-    if (!data.company) {
-        showToast('Bitte Unternehmen eingeben!', 'warning');
-        return;
-    }
-    if (!data.job_title) {
-        showToast('Bitte Stellenbezeichnung eingeben!', 'warning');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/save-draft', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                company: data.company,
-                job_title: data.job_title,
-                company_address: data.company_address,
-                contact_person: data.contact_person,
-                generated_text: getPlainTextContent(),
-                template_used: template
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast(result.message);
-            setTimeout(() => {
-                window.location.href = '/applications';
-            }, 1500);
-        } else {
-            showToast('Fehler: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showToast('Fehler beim Speichern: ' + error.message, 'error');
-    }
+function showToast(m) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastMessage').textContent = m;
+    t.style.display = 'block';
+    setTimeout(() => t.style.display = 'none', 3000);
 }
-
-{% if application %}
-async function saveLetter() {
-    const htmlContent = getEditorContent();
-    const template = quill.root.innerHTML;
-    
-    if (!htmlContent.trim()) {
-        showToast('Bitte zuerst Text eingeben!', 'warning');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/letters', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                application_id: {{ application.id }},
-                template_used: template,
-                rendered_text: getPlainTextContent()
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showToast('Anschreiben gespeichert!');
-        } else {
-            showToast('Fehler: ' + result.error, 'error');
-        }
-    } catch (error) {
-        showToast('Fehler beim Speichern: ' + error.message, 'error');
-    }
-}
-{% endif %}
-
-function showToast(message, type = 'success') {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    
-    toastMessage.textContent = message;
-    
-    const colors = {
-        'success': 'var(--accent-success)',
-        'warning': 'var(--accent-tertiary)',
-        'error': 'var(--accent-danger)',
-        'info': 'var(--accent-primary)'
-    };
-    
-    const color = colors[type] || colors['success'];
-    toast.style.borderColor = color;
-    toast.style.color = color;
-    
-    toast.style.display = 'flex';
-    
-    setTimeout(() => {
-        toast.style.display = 'none';
-    }, 3000);
-}
-
-// Auto-generate on page load if application is linked
-{% if application %}
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(generateText, 500);
-});
-{% endif %}
-
-// Update preview when switching tabs
-document.addEventListener('DOMContentLoaded', function() {
-    // Initial preview update
-    updatePDFPreview();
-});
 </script>
 {% endblock %}

@@ -301,7 +301,7 @@
     
     .pdf-page-number {
         position: absolute;
-        bottom: 15mm;
+        bottom: 10mm;
         right: 20mm;
         font-size: 9pt;
         color: #666;
@@ -963,17 +963,25 @@ function updatePDFPreview() {
     // Seite 1 rendern
     const page1 = document.createElement('div');
     page1.className = 'pdf-page';
-    page1.style.height = `${pageHeight}mm`;
-    page1.style.padding = `${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm`;
-    page1.style.overflow = 'hidden';
+    page1.style.cssText = `
+        height: ${pageHeight}mm;
+        padding: ${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm;
+        overflow: hidden;
+        box-sizing: border-box;
+    `;
+    
+    // Berechne die maximale Höhe für den Body-Text auf Seite 1
+    // bodyStartY ist 115mm von oben, also ist der verfügbare Platz: pageHeight - bodyStartY - margins.bottom
+    const bodyMaxHeight = pageHeight - bodyStartY - margins.bottom;
+    
     page1.innerHTML = `
         <div class="pdf-sender-block" style="top: ${margins.top}mm; right: ${margins.right}mm;">${senderBlock}</div>
         <div class="pdf-sender-line">${senderLine}</div>
         <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
         <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
         <div class="pdf-subject">${subject}</div>
-        <div class="pdf-body">${renderedContent}</div>
-        ${totalPages > 1 ? `<div class="pdf-page-number">Seite 1 von ${totalPages}</div>` : ''}
+        <div class="pdf-body" style="max-height: ${bodyMaxHeight}mm; overflow: hidden;">${renderedContent}</div>
+        ${totalPages > 1 ? `<div class="pdf-page-number" style="bottom: ${margins.bottom - 10}mm;">Seite 1 von ${totalPages}</div>` : ''}
     `;
     preview.appendChild(page1);
     

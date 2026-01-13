@@ -451,13 +451,13 @@
                 <div class="form-group">
                     <label class="form-label">Ihr Name</label>
                     <input type="text" name="your_name" class="form-control"
-                           value="{{ user_settings.your_name if user_settings else '' }}"
+                           value="{{ user_settings.your_name or '' }}"
                            placeholder="Max Mustermann">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ihre E-Mail</label>
                     <input type="email" name="your_email" class="form-control"
-                           value="{{ user_settings.your_email if user_settings else '' }}"
+                           value="{{ user_settings.your_email or '' }}"
                            placeholder="max@beispiel.de">
                 </div>
             </div>
@@ -466,12 +466,12 @@
                 <div class="form-group">
                     <label class="form-label">Ihre Adresse</label>
                     <textarea name="your_address" class="form-control" rows="2"
-                              placeholder="Straße, PLZ Ort">{{ user_settings.your_address if user_settings else '' }}</textarea>
+                              placeholder="Straße, PLZ Ort">{{ user_settings.your_address or '' }}</textarea>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Ihre Telefonnummer</label>
                     <input type="tel" name="your_phone" class="form-control"
-                           value="{{ user_settings.your_phone if user_settings else '' }}"
+                           value="{{ user_settings.your_phone or '' }}"
                            placeholder="+49 123 456789">
                 </div>
             </div>
@@ -490,18 +490,18 @@
                 <div style="display: flex; gap: 0.5rem; align-items: center;">
                     {% if templates %}
                     <select id="templateSelect" class="form-control" style="width: auto; min-width: 200px;" onchange="loadTemplate(this.value)">
+                        <option value="">-- Vorlage wählen --</option>
                         {% for tpl in templates %}
-                        <option value="{{ tpl.id }}" {% if selected_template and selected_template.id == tpl.id %}selected{% endif %}>
+                        <option value="{{ tpl.id }}">
                             {{ tpl.name }}{% if tpl.is_default %} ★{% endif %}
                         </option>
                         {% endfor %}
                     </select>
-                    {% else %}
+                    {% endif %}
                     <a href="{{ url_for('template_new') }}" class="btn btn-secondary btn-sm">
                         <i class="bi bi-plus-lg"></i>
                         Vorlage erstellen
                     </a>
-                    {% endif %}
                 </div>
             </div>
             
@@ -616,7 +616,7 @@
 // Initialize Quill Editor
 const quill = new Quill('#templateEditor', {
     theme: 'snow',
-    placeholder: 'Geben Sie hier Ihre Vorlage ein...',
+    placeholder: 'Schreiben Sie hier Ihren Bewerbungstext oder wählen Sie eine Vorlage aus...',
     modules: {
         toolbar: [
             [{ 'font': [] }],
@@ -631,9 +631,8 @@ const quill = new Quill('#templateEditor', {
     }
 });
 
-// Set initial content
-const defaultTemplate = `{{ default_template | replace('\n', '\\n') | replace("'", "\\'") | replace('\r', '') | safe }}`;
-quill.root.innerHTML = defaultTemplate.replace(/\n/g, '<br>');
+// Editor startet leer - Vorlagen können über das Dropdown geladen werden
+// Die Briefkopf-Daten (Name, Adresse, etc.) werden aus dem Formular links übernommen
 
 // Preview scale
 let previewScale = 50;

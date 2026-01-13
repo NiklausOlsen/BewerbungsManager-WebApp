@@ -1089,7 +1089,17 @@ def text_generator_page():
     if application_id:
         application = Application.query.filter_by(id=application_id, user_id=current_user.id).first()
     
+    # Benutzereinstellungen laden oder erstellen
     user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    if not user_settings:
+        # Neue Einstellungen mit Daten aus User-Account vorausfüllen
+        user_settings = UserSettings(
+            user_id=current_user.id,
+            your_name=current_user.name or '',
+            your_email=current_user.email or ''
+        )
+        db.session.add(user_settings)
+        db.session.commit()
     
     # Platzhalter für die UI
     placeholders = text_generator.get_placeholder_list()
@@ -1097,33 +1107,12 @@ def text_generator_page():
     # Alle Vorlagen des Benutzers laden
     templates = Template.query.filter_by(user_id=current_user.id).order_by(Template.name).all()
     
-    # Standard-Template bestimmen
-    default_template = TextGenerator.DEFAULT_TEMPLATE
-    selected_template = None
-    
-    if template_id:
-        selected_template = Template.query.filter_by(id=template_id, user_id=current_user.id).first()
-        if selected_template:
-            default_template = selected_template.content
-    elif templates:
-        # Suche nach Standard-Vorlage
-        default_tpl = Template.query.filter_by(user_id=current_user.id, is_default=True).first()
-        if default_tpl:
-            selected_template = default_tpl
-            default_template = default_tpl.content
-        else:
-            # Erste Vorlage verwenden
-            selected_template = templates[0]
-            default_template = templates[0].content
-    
     return render_template(
         'generator.html',
         application=application,
         user_settings=user_settings,
         placeholders=placeholders,
-        default_template=default_template,
         templates=templates,
-        selected_template=selected_template,
         today=date.today().strftime('%Y-%m-%d')
     )
 

@@ -1623,6 +1623,12 @@ def imprint():
     return render_template('legal/imprint.html')
 
 
+@app.route('/robots.txt')
+def robots_txt():
+    """Robots.txt - verhindert Indexierung durch Suchmaschinen"""
+    return send_file('static/robots.txt', mimetype='text/plain')
+
+
 # ============================================================================
 # Run
 # ============================================================================

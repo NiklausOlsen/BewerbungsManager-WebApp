@@ -7,26 +7,16 @@
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
 <style>
     /* Rich Text Editor Styles */
-    .editor-toolbar {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem;
-        padding: 0.75rem;
-        background: var(--bg-tertiary);
-        border: 1px solid var(--border-color);
-        border-bottom: none;
-        border-radius: var(--radius-md) var(--radius-md) 0 0;
-    }
-    
     .ql-container {
         border: 1px solid var(--border-color) !important;
+        border-top: none !important;
         border-radius: 0 0 var(--radius-md) var(--radius-md);
         font-family: var(--font-sans) !important;
         background: var(--bg-secondary);
     }
     
     .ql-editor {
-        min-height: 400px;
+        min-height: 500px;
         color: var(--text-primary);
         font-size: 0.95rem;
         line-height: 1.7;
@@ -35,7 +25,7 @@
     .ql-toolbar {
         background: var(--bg-tertiary) !important;
         border-color: var(--border-color) !important;
-        border-radius: var(--radius-md) var(--radius-md) 0 0;
+        border-radius: var(--radius-md) var(--radius-md) 0 0 !important;
     }
 
     .ql-snow .ql-stroke { stroke: var(--text-secondary) !important; }
@@ -48,15 +38,6 @@
         border-radius: var(--radius-md);
         border: 1px solid var(--border-color);
         overflow: hidden;
-    }
-    
-    .pdf-preview-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.75rem 1rem;
-        background: var(--bg-tertiary);
-        border-bottom: 1px solid var(--border-color);
     }
     
     .margin-settings {
@@ -132,6 +113,31 @@
         gap: 1.5rem;
     }
 
+    /* Placeholder Tags */
+    .placeholder-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .placeholder-tag {
+        padding: 0.25rem 0.75rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        font-size: 0.8rem;
+        font-family: var(--font-mono);
+        color: var(--accent-primary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .placeholder-tag:hover {
+        background: var(--bg-hover);
+        border-color: var(--accent-primary);
+    }
+
     @media (max-width: 1000px) {
         .generator-layout { grid-template-columns: 1fr; }
     }
@@ -205,9 +211,16 @@
         </div>
 
         <div class="p-3">
+            <!-- Placeholders -->
+            <div class="placeholder-tags">
+                {% for placeholder in placeholders %}
+                <span class="placeholder-tag" onclick="insertPlaceholder('{{ placeholder }}')">{{ placeholder }}</span>
+                {% endfor %}
+            </div>
+
             <div class="editor-tabs">
-                <button class="editor-tab active" onclick="switchTab('editor')"><i class="bi bi-pencil-square"></i> Editor</button>
-                <button class="editor-tab" onclick="switchTab('preview')"><i class="bi bi-eye"></i> PDF Vorschau</button>
+                <button id="tab-editor" class="editor-tab active" onclick="switchTab('editor')"><i class="bi bi-pencil-square"></i> Editor</button>
+                <button id="tab-preview" class="editor-tab" onclick="switchTab('preview')"><i class="bi bi-eye"></i> PDF Vorschau</button>
             </div>
 
             <div id="editorTab" class="tab-content active">
@@ -219,26 +232,26 @@
                     <div class="margin-settings">
                         <div class="margin-group">
                             <span class="small text-muted">Oben:</span>
-                            <input type="number" id="marginTop" class="margin-input" value="27">
+                            <input type="number" id="marginTop" class="margin-input" value="27" onchange="updatePDFPreview()">
                         </div>
                         <div class="margin-group">
                             <span class="small text-muted">Unten:</span>
-                            <input type="number" id="marginBottom" class="margin-input" value="25">
+                            <input type="number" id="marginBottom" class="margin-input" value="25" onchange="updatePDFPreview()">
                         </div>
                         <div class="margin-group">
                             <span class="small text-muted">Links:</span>
-                            <input type="number" id="marginLeft" class="margin-input" value="25">
+                            <input type="number" id="marginLeft" class="margin-input" value="25" onchange="updatePDFPreview()">
                         </div>
                         <div class="margin-group">
                             <span class="small text-muted">Rechts:</span>
-                            <input type="number" id="marginRight" class="margin-input" value="20">
+                            <input type="number" id="marginRight" class="margin-input" value="20" onchange="updatePDFPreview()">
                         </div>
                         <div class="ms-auto d-flex gap-1">
-                            <button class="margin-preset-btn active" onclick="setMarginPreset('din5008')">DIN 5008</button>
-                            <button class="margin-preset-btn" onclick="setMarginPreset('schmal')">Schmal</button>
+                            <button id="preset-din5008" class="margin-preset-btn active" onclick="setMarginPreset('din5008')">DIN 5008</button>
+                            <button id="preset-schmal" class="margin-preset-btn" onclick="setMarginPreset('schmal')">Schmal</button>
                         </div>
                     </div>
-                    <div style="height: 800px; background: #525659;">
+                    <div style="height: 800px; background: #525659; display: flex; justify-content: center; align-items: center;">
                         <iframe id="pdfFrame" style="width: 100%; height: 100%; border: none;"></iframe>
                     </div>
                 </div>
@@ -257,7 +270,7 @@
 </div>
 
 <!-- Toast -->
-<div id="toast" style="position: fixed; bottom: 2rem; right: 2rem; padding: 1rem; border-radius: var(--radius-md); display: none; z-index: 9999; background: var(--bg-secondary); border: 1px solid var(--accent-primary);">
+<div id="toast" style="position: fixed; bottom: 2rem; right: 2rem; padding: 1rem; border-radius: var(--radius-md); display: none; z-index: 9999; background: var(--bg-secondary); border: 1px solid var(--accent-primary); box-shadow: var(--shadow-card);">
     <span id="toastMessage"></span>
 </div>
 {% endblock %}
@@ -284,13 +297,18 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     
     if (tab === 'editor') {
-        document.querySelector('[onclick="switchTab(\'editor\')"]').classList.add('active');
+        document.getElementById('tab-editor').classList.add('active');
         document.getElementById('editorTab').classList.add('active');
     } else {
-        document.querySelector('[onclick="switchTab(\'preview\')"]').classList.add('active');
+        document.getElementById('tab-preview').classList.add('active');
         document.getElementById('previewTab').classList.add('active');
         updatePDFPreview();
     }
+}
+
+function insertPlaceholder(p) {
+    const range = quill.getSelection(true);
+    quill.insertText(range.index, p);
 }
 
 function getMargins() {
@@ -304,13 +322,14 @@ function getMargins() {
 
 function setMarginPreset(preset) {
     document.querySelectorAll('.margin-preset-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
     if (preset === 'din5008') {
+        document.getElementById('preset-din5008').classList.add('active');
         document.getElementById('marginTop').value = 27;
         document.getElementById('marginBottom').value = 25;
         document.getElementById('marginLeft').value = 25;
         document.getElementById('marginRight').value = 20;
     } else {
+        document.getElementById('preset-schmal').classList.add('active');
         document.getElementById('marginTop').value = 20;
         document.getElementById('marginBottom').value = 20;
         document.getElementById('marginLeft').value = 20;
@@ -325,25 +344,32 @@ async function updatePDFPreview() {
     const iframe = document.getElementById('pdfFrame');
     const data = getFormData();
     const htmlContent = quill.root.innerHTML;
+    const plainText = quill.getText().trim();
     
-    if (quill.getText().trim().length < 2) {
-        iframe.srcdoc = '<body style="background:#525659;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif">Bitte Text eingeben...</body>';
+    // Wenn fast kein Text da ist, Platzhalter zeigen
+    if (plainText.length < 1) {
+        iframe.srcdoc = '<body style="background:#525659;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;margin:0">Bitte Text im Editor eingeben...</body>';
         return;
     }
 
     try {
+        iframe.srcdoc = '<body style="background:#525659;color:white;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;margin:0">PDF wird geladen...</body>';
+        
         const response = await fetch('/api/preview-pdf', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...data, html_content: htmlContent, body_text: quill.getText(), margins: getMargins() })
+            body: JSON.stringify({ ...data, html_content: htmlContent, body_text: plainText, margins: getMargins() })
         });
+        
+        if (!response.ok) throw new Error('Serverfehler');
         
         const blob = await response.blob();
         if (currentPdfUrl) URL.revokeObjectURL(currentPdfUrl);
         currentPdfUrl = URL.createObjectURL(blob);
         iframe.src = currentPdfUrl;
+        iframe.removeAttribute('srcdoc');
     } catch (e) {
-        console.error(e);
+        iframe.srcdoc = `<body style="background:#525659;color:#ff6b6b;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;margin:0">Fehler beim Laden der Vorschau: ${e.message}</body>`;
     }
 }
 
@@ -366,15 +392,21 @@ async function loadTemplate(id) {
 
 async function generateText() {
     showToast('Generiere...', 'info');
-    const response = await fetch('/api/generate-text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...getFormData(), current_content: quill.root.innerHTML })
-    });
-    const res = await response.json();
-    if (res.success) {
-        quill.root.innerHTML = res.text.replace(/\n/g, '<br>');
-        showToast('Text bereit!');
+    try {
+        const response = await fetch('/api/generate-text', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...getFormData(), current_content: quill.root.innerHTML })
+        });
+        const res = await response.json();
+        if (res.success) {
+            quill.root.innerHTML = res.text.replace(/\n/g, '<br>');
+            showToast('Text bereit!');
+        } else {
+            showToast('Fehler: ' + res.error);
+        }
+    } catch (e) {
+        showToast('Systemfehler');
     }
 }
 
@@ -383,20 +415,26 @@ function copyToClipboard() {
 }
 
 async function exportPDF() {
-    const response = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...getFormData(), html_content: quill.root.innerHTML, body_text: quill.getText(), margins: getMargins() })
-    });
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'Bewerbung.pdf';
-    a.click();
+    showToast('PDF wird erstellt...');
+    try {
+        const response = await fetch('/api/export-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...getFormData(), html_content: quill.root.innerHTML, body_text: quill.getText(), margins: getMargins() })
+        });
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Bewerbung.pdf';
+        a.click();
+        showToast('Download gestartet');
+    } catch (e) {
+        showToast('Fehler beim Export');
+    }
 }
 
-function showToast(m) {
+function showToast(m, type = 'success') {
     const t = document.getElementById('toast');
     document.getElementById('toastMessage').textContent = m;
     t.style.display = 'block';

@@ -1235,6 +1235,46 @@ def api_save_draft():
     })
 
 
+@app.route('/api/preview-pdf', methods=['POST'])
+@login_required
+def api_preview_pdf():
+    """API-Endpunkt für die PDF-Vorschau (gibt PDF als Blob zurück)"""
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'success': False, 'error': 'Keine Daten erhalten'}), 400
+    
+    body_text = data.get('body_text', '')
+    if not body_text:
+        return jsonify({'success': False, 'error': 'Kein Text'}), 400
+    
+    # PDF-Daten vorbereiten
+    pdf_data = {
+        'your_name': data.get('your_name', ''),
+        'your_address': data.get('your_address', ''),
+        'your_email': data.get('your_email', ''),
+        'your_phone': data.get('your_phone', ''),
+        'company': data.get('company', ''),
+        'company_address': data.get('company_address', ''),
+        'contact_person': data.get('contact_person', ''),
+        'date': data.get('date', ''),
+        'subject': data.get('subject', ''),
+        'job_title': data.get('job_title', ''),
+        'body_text': body_text,
+        'html_content': data.get('html_content', ''),
+        'margins': data.get('margins', {})
+    }
+    
+    # PDF generieren
+    pdf_buffer = pdf_generator.generate_pdf(pdf_data)
+    
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=False
+    )
+
+
 @app.route('/api/export-pdf', methods=['POST'])
 @login_required
 def api_export_pdf():
@@ -1260,7 +1300,9 @@ def api_export_pdf():
         'date': data.get('date', ''),
         'subject': data.get('subject', ''),
         'job_title': data.get('job_title', ''),
-        'body_text': body_text
+        'body_text': body_text,
+        'html_content': data.get('html_content', ''),
+        'margins': data.get('margins', {})
     }
     
     # PDF generieren

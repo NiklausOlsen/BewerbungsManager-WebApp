@@ -5,6 +5,8 @@
 {% block head %}
 <!-- Quill.js Rich Text Editor -->
 <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<!-- PDF.js für echte PDF-Vorschau -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
     /* Rich Text Editor Styles */
     .editor-toolbar {
@@ -647,7 +649,7 @@
                     <div class="pdf-preview-header">
                         <span class="pdf-preview-title">
                             <i class="bi bi-file-earmark-pdf"></i>
-                            DIN 5008 Brief Vorschau
+                            Echte PDF Vorschau
                         </span>
                         <div class="preview-scale-controls">
                             <button class="scale-btn" onclick="changePreviewScale(-10)">
@@ -657,28 +659,31 @@
                             <button class="scale-btn" onclick="changePreviewScale(10)">
                                 <i class="bi bi-plus"></i>
                             </button>
+                            <button class="btn btn-secondary btn-sm" onclick="updatePDFPreview()" style="margin-left: 10px;">
+                                <i class="bi bi-arrow-clockwise"></i> Aktualisieren
+                            </button>
                         </div>
                     </div>
                     <!-- Margin Settings -->
                     <div class="margin-settings">
                         <div class="margin-group">
                             <span class="margin-label">Oben:</span>
-                            <input type="number" class="margin-input" id="marginTop" value="27" min="10" max="50" onchange="updatePDFPreview()">
+                            <input type="number" class="margin-input" id="marginTop" value="27" min="10" max="50">
                             <span class="margin-unit">mm</span>
                         </div>
                         <div class="margin-group">
                             <span class="margin-label">Unten:</span>
-                            <input type="number" class="margin-input" id="marginBottom" value="25" min="10" max="50" onchange="updatePDFPreview()">
+                            <input type="number" class="margin-input" id="marginBottom" value="25" min="10" max="50">
                             <span class="margin-unit">mm</span>
                         </div>
                         <div class="margin-group">
                             <span class="margin-label">Links:</span>
-                            <input type="number" class="margin-input" id="marginLeft" value="25" min="10" max="50" onchange="updatePDFPreview()">
+                            <input type="number" class="margin-input" id="marginLeft" value="25" min="10" max="50">
                             <span class="margin-unit">mm</span>
                         </div>
                         <div class="margin-group">
                             <span class="margin-label">Rechts:</span>
-                            <input type="number" class="margin-input" id="marginRight" value="20" min="10" max="50" onchange="updatePDFPreview()">
+                            <input type="number" class="margin-input" id="marginRight" value="20" min="10" max="50">
                             <span class="margin-unit">mm</span>
                         </div>
                         <div class="margin-group" style="margin-left: auto;">
@@ -689,8 +694,12 @@
                     </div>
                     <div class="pdf-preview-wrapper">
                         <div id="pdfPreviewScaler" class="pdf-preview-scaler" style="transform: scale(0.5);">
-                            <!-- PDF Pages will be rendered here -->
+                            <!-- PDF Pages will be rendered here as canvas elements -->
                             <div id="pdfPreview">
+                                <div class="pdf-loading" style="text-align: center; padding: 40px; color: #666;">
+                                    <i class="bi bi-file-earmark-pdf" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                                    Klicken Sie auf "Aktualisieren" um die PDF-Vorschau zu laden
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -846,209 +855,126 @@ function switchTab(tab) {
     }
 }
 
-function updatePDFPreview() {
-    const data = getFormData();
-    const content = quill.root.innerHTML;
-    
-    // Replace placeholders in content - nur den Brieftext-Inhalt
-    let renderedContent = content;
-    renderedContent = renderedContent.replace(/\{\{company\}\}/g, data.company || '[Unternehmen]');
-    renderedContent = renderedContent.replace(/\{\{company_address\}\}/g, (data.company_address || '[Adresse]').replace(/\n/g, '<br>'));
-    renderedContent = renderedContent.replace(/\{\{job_title\}\}/g, data.job_title || '[Position]');
-    renderedContent = renderedContent.replace(/\{\{contact_person\}\}/g, data.contact_person || '');
-    renderedContent = renderedContent.replace(/\{\{your_name\}\}/g, data.your_name || '[Ihr Name]');
-    renderedContent = renderedContent.replace(/\{\{your_address\}\}/g, (data.your_address || '[Ihre Adresse]').replace(/\n/g, '<br>'));
-    renderedContent = renderedContent.replace(/\{\{your_email\}\}/g, data.your_email || '[E-Mail]');
-    renderedContent = renderedContent.replace(/\{\{your_phone\}\}/g, data.your_phone || '[Telefon]');
-    renderedContent = renderedContent.replace(/\{\{subject\}\}/g, data.subject || `Bewerbung als ${data.job_title || '[Position]'}`);
-    
-    // Format date
-    let dateStr = data.date;
-    if (dateStr) {
-        const dateObj = new Date(dateStr);
-        dateStr = dateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-    renderedContent = renderedContent.replace(/\{\{date\}\}/g, dateStr || new Date().toLocaleDateString('de-DE'));
-    
-    // Extract location from address
-    let location = 'Flensburg';
-    if (data.your_address) {
-        const lines = data.your_address.split('\n');
-        if (lines.length > 0) {
-            const lastLine = lines[lines.length - 1].trim();
-            const parts = lastLine.split(' ');
-            if (parts.length > 1) {
-                location = parts.slice(1).join(' ');
-            }
-        }
-    }
-    
-    // Build sender line (kleine Zeile über dem Empfänger)
-    const senderParts = [];
-    if (data.your_name) senderParts.push(data.your_name);
-    if (data.your_address) {
-        data.your_address.split('\n').forEach(line => {
-            if (line.trim()) senderParts.push(line.trim());
-        });
-    }
-    const senderLine = senderParts.join(' · ');
-    
-    // Build sender block (oben rechts)
-    let senderBlock = '';
-    if (data.your_name) senderBlock += `<div>${data.your_name}</div>`;
-    if (data.your_address) {
-        data.your_address.split('\n').forEach(line => {
-            if (line.trim()) senderBlock += `<div>${line.trim()}</div>`;
-        });
-    }
-    senderBlock += '<div style="height: 6px;"></div>';
-    if (data.your_phone) senderBlock += `<div>Tel.: ${data.your_phone}</div>`;
-    if (data.your_email) senderBlock += `<div>${data.your_email}</div>`;
-    
-    // Build recipient (Empfänger links)
-    let recipient = '';
-    if (data.company) recipient += `<div>${data.company}</div>`;
-    if (data.contact_person) recipient += `<div>${data.contact_person}</div>`;
-    if (data.company_address) {
-        data.company_address.split('\n').forEach(line => {
-            if (line.trim()) recipient += `<div>${line.trim()}</div>`;
-        });
-    }
-    
-    // Subject (Betreff)
-    const subject = data.subject || (data.job_title ? `Bewerbung als ${data.job_title}` : 'Bewerbung');
-    
-    // Render PDF preview - DIN 5008 Layout mit echten Seitenumbrüchen
+async function updatePDFPreview() {
     const preview = document.getElementById('pdfPreview');
-    preview.innerHTML = '';
     
-    // Ränder aus Einstellungen holen
+    // Zeige Ladeindikator
+    preview.innerHTML = `
+        <div style="text-align: center; padding: 60px; color: #666;">
+            <div class="spinner-border" role="status" style="width: 3rem; height: 3rem; border-color: var(--accent-primary); border-right-color: transparent;">
+                <span class="visually-hidden">Lädt...</span>
+            </div>
+            <div style="margin-top: 15px;">PDF wird generiert...</div>
+        </div>
+    `;
+    
+    const data = getFormData();
+    const htmlContent = getEditorContent();
     const margins = getMargins();
     
-    // Maße (mm zu px: 1mm ≈ 3.7795px bei 96 DPI)
-    const mmToPx = 3.7795275591;
-    const pageHeight = 297; // mm
-    const pageWidth = 210; // mm
-    const bodyStartY = 115; // mm - wo der Brieftext beginnt (nach Briefkopf/Betreff)
-    const bodyWidth = pageWidth - margins.left - margins.right; // Dynamische Breite
+    // Convert HTML to plain text
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    const bodyText = tempDiv.innerText || tempDiv.textContent;
     
-    const firstPageBodyHeight = pageHeight - bodyStartY - margins.bottom;
-    const continuationPageBodyHeight = pageHeight - margins.top - margins.bottom;
-    
-    // Temporäres Element zum Messen der Texthöhe
-    const measureDiv = document.createElement('div');
-    measureDiv.style.cssText = `
-        position: absolute;
-        visibility: hidden;
-        width: ${bodyWidth}mm;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        font-size: 11pt;
-        line-height: 1.6;
-        text-align: justify;
-    `;
-    measureDiv.innerHTML = renderedContent;
-    document.body.appendChild(measureDiv);
-    
-    const contentHeightPx = measureDiv.scrollHeight;
-    const contentHeightMm = contentHeightPx / mmToPx;
-    document.body.removeChild(measureDiv);
-    
-    // Berechne benötigte Seiten
-    let totalPages = 1;
-    if (contentHeightMm > firstPageBodyHeight) {
-        const overflowMm = contentHeightMm - firstPageBodyHeight;
-        totalPages = 1 + Math.ceil(overflowMm / continuationPageBodyHeight);
+    if (!bodyText.trim()) {
+        preview.innerHTML = `
+            <div style="text-align: center; padding: 60px; color: #666;">
+                <i class="bi bi-file-earmark-text" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                Bitte geben Sie Text im Editor ein
+            </div>
+        `;
+        return;
     }
     
-    // Seite 1 rendern
-    const page1 = document.createElement('div');
-    page1.className = 'pdf-page';
-    page1.style.cssText = `
-        height: ${pageHeight}mm;
-        padding: ${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm;
-        overflow: hidden;
-        box-sizing: border-box;
-    `;
+    // Prepare data for PDF preview
+    const pdfData = {
+        ...data,
+        body_text: bodyText,
+        html_content: htmlContent,
+        margins: margins
+    };
     
-    // Berechne die maximale Höhe für den Body-Text auf Seite 1
-    // bodyStartY ist 115mm von oben, also ist der verfügbare Platz: pageHeight - bodyStartY - margins.bottom
-    const bodyMaxHeight = pageHeight - bodyStartY - margins.bottom;
-    
-    page1.innerHTML = `
-        <div class="pdf-sender-block" style="top: ${margins.top}mm; right: ${margins.right}mm;">${senderBlock}</div>
-        <div class="pdf-sender-line">${senderLine}</div>
-        <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
-        <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
-        <div class="pdf-subject">${subject}</div>
-        <div class="pdf-body" style="max-height: ${bodyMaxHeight}mm; overflow: hidden;">${renderedContent}</div>
-        ${totalPages > 1 ? `<div class="pdf-page-number" style="bottom: ${margins.bottom - 10}mm;">Seite 1 von ${totalPages}</div>` : ''}
-    `;
-    preview.appendChild(page1);
-    
-    if (totalPages > 1) {
-        const label1 = document.createElement('div');
-        label1.className = 'pdf-page-label';
-        label1.textContent = `Seite 1 von ${totalPages}`;
-        preview.appendChild(label1);
+    // Auto-generate subject if empty
+    if (!pdfData.subject && pdfData.job_title) {
+        pdfData.subject = 'Bewerbung als ' + pdfData.job_title;
     }
     
-    // Folgeseiten rendern
-    for (let p = 2; p <= totalPages; p++) {
-        const offsetMm = firstPageBodyHeight + (p - 2) * continuationPageBodyHeight;
+    try {
+        // PDF vom Server holen
+        const response = await fetch('/api/preview-pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(pdfData)
+        });
         
-        const pageDiv = document.createElement('div');
-        pageDiv.className = 'pdf-page-continuation';
-        pageDiv.style.cssText = `
-            height: ${pageHeight}mm;
-            overflow: hidden;
-            position: relative;
-            background: #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        `;
+        if (!response.ok) {
+            throw new Error('PDF-Generierung fehlgeschlagen');
+        }
         
-        // Container für den verschobenen Text (ohne padding, nur absolute Positionierung)
-        const textContainer = document.createElement('div');
-        textContainer.style.cssText = `
-            position: absolute;
-            top: ${margins.top}mm;
-            left: ${margins.left}mm;
-            right: ${margins.right}mm;
-            bottom: ${margins.bottom}mm;
-            overflow: hidden;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.6;
-            text-align: justify;
-        `;
+        const pdfBlob = await response.blob();
+        const pdfUrl = URL.createObjectURL(pdfBlob);
         
-        // Innerer Container mit negativem Offset
-        const innerContainer = document.createElement('div');
-        innerContainer.style.cssText = `margin-top: -${offsetMm}mm;`;
-        innerContainer.innerHTML = renderedContent;
+        // PDF.js Worker konfigurieren
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
-        textContainer.appendChild(innerContainer);
-        pageDiv.appendChild(textContainer);
+        // PDF laden
+        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+        const numPages = pdf.numPages;
         
-        // Seitenzahl
-        const pageNum = document.createElement('div');
-        pageNum.className = 'pdf-page-number';
-        pageNum.style.cssText = `
-            position: absolute;
-            right: ${margins.right}mm;
-            bottom: ${Math.max(10, margins.bottom - 10)}mm;
-            font-size: 9pt;
-            color: #666;
-        `;
-        pageNum.textContent = `Seite ${p} von ${totalPages}`;
-        pageDiv.appendChild(pageNum);
+        // Preview leeren
+        preview.innerHTML = '';
         
-        preview.appendChild(pageDiv);
+        // Alle Seiten rendern
+        for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            
+            // A4 bei 150 DPI für gute Qualität
+            const scale = 150 / 72; // 72 DPI ist PDF-Standard
+            const viewport = page.getViewport({ scale: scale });
+            
+            // Canvas erstellen
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.style.cssText = `
+                display: block;
+                background: white;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                margin-bottom: 20px;
+            `;
+            
+            // Seite rendern
+            const context = canvas.getContext('2d');
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+            
+            preview.appendChild(canvas);
+            
+            // Seitenlabel
+            if (numPages > 1) {
+                const label = document.createElement('div');
+                label.className = 'pdf-page-label';
+                label.textContent = `Seite ${pageNum} von ${numPages}`;
+                preview.appendChild(label);
+            }
+        }
         
-        // Seitenlabel
-        const label = document.createElement('div');
-        label.className = 'pdf-page-label';
-        label.textContent = `Seite ${p} von ${totalPages}`;
-        preview.appendChild(label);
+        // URL freigeben
+        URL.revokeObjectURL(pdfUrl);
+        
+    } catch (error) {
+        console.error('PDF Preview Error:', error);
+        preview.innerHTML = `
+            <div style="text-align: center; padding: 60px; color: #e74c3c;">
+                <i class="bi bi-exclamation-triangle" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                Fehler beim Laden der Vorschau<br>
+                <small style="color: #666;">${error.message}</small>
+            </div>
     }
 }
 

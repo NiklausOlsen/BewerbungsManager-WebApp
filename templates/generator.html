@@ -165,7 +165,7 @@
     
     /* PDF Preview Styles */
     .pdf-preview-container {
-        background: #fff;
+        background: #e8e8e8;
         border-radius: var(--radius-md);
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         overflow: hidden;
@@ -197,13 +197,16 @@
     .pdf-page {
         background: #fff;
         color: #000;
-        padding: 25mm 20mm 25mm 25mm;
+        width: 210mm;
         min-height: 297mm;
+        padding: 0;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         font-size: 11pt;
-        line-height: 1.4;
+        line-height: 1.5;
         position: relative;
         transform-origin: top left;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        margin: 20px auto;
     }
     
     .pdf-page.scaled {
@@ -217,36 +220,50 @@
         right: 20mm;
         text-align: right;
         font-size: 10pt;
+        line-height: 1.4;
     }
     
     .pdf-sender-line {
+        position: absolute;
+        top: 45mm;
+        left: 25mm;
         font-size: 7pt;
         color: #666;
         border-bottom: 0.5px solid #666;
         padding-bottom: 2px;
-        margin-bottom: 15mm;
-        display: inline-block;
     }
     
     .pdf-recipient {
-        margin-top: 50.8mm;
-        margin-bottom: 10mm;
+        position: absolute;
+        top: 50.8mm;
+        left: 25mm;
         font-size: 11pt;
+        line-height: 1.4;
     }
     
     .pdf-date {
+        position: absolute;
+        top: 50.8mm;
+        right: 20mm;
         text-align: right;
-        margin-bottom: 15mm;
         font-size: 11pt;
     }
     
     .pdf-subject {
+        position: absolute;
+        top: 103.4mm;
+        left: 25mm;
+        right: 20mm;
         font-weight: bold;
-        margin-bottom: 10mm;
         font-size: 11pt;
     }
     
     .pdf-body {
+        position: absolute;
+        top: 115mm;
+        left: 25mm;
+        right: 20mm;
+        bottom: 25mm;
         font-size: 11pt;
         line-height: 1.5;
         text-align: justify;
@@ -300,10 +317,12 @@
     
     /* Preview Wrapper for Scrolling */
     .pdf-preview-wrapper {
-        max-height: 600px;
+        max-height: 700px;
         overflow: auto;
-        background: #e0e0e0;
+        background: #d0d0d0;
         padding: 20px;
+        display: flex;
+        justify-content: center;
     }
     
     /* Tab Navigation */
@@ -653,7 +672,7 @@ function updatePDFPreview() {
     const data = getFormData();
     const content = quill.root.innerHTML;
     
-    // Replace placeholders in content
+    // Replace placeholders in content - nur den Brieftext-Inhalt
     let renderedContent = content;
     renderedContent = renderedContent.replace(/\{\{company\}\}/g, data.company || '[Unternehmen]');
     renderedContent = renderedContent.replace(/\{\{company_address\}\}/g, (data.company_address || '[Adresse]').replace(/\n/g, '<br>'));
@@ -674,7 +693,7 @@ function updatePDFPreview() {
     renderedContent = renderedContent.replace(/\{\{date\}\}/g, dateStr || new Date().toLocaleDateString('de-DE'));
     
     // Extract location from address
-    let location = 'Ort';
+    let location = 'Flensburg';
     if (data.your_address) {
         const lines = data.your_address.split('\n');
         if (lines.length > 0) {
@@ -686,7 +705,7 @@ function updatePDFPreview() {
         }
     }
     
-    // Build sender line
+    // Build sender line (kleine Zeile über dem Empfänger)
     const senderParts = [];
     if (data.your_name) senderParts.push(data.your_name);
     if (data.your_address) {
@@ -696,7 +715,7 @@ function updatePDFPreview() {
     }
     const senderLine = senderParts.join(' · ');
     
-    // Build sender block
+    // Build sender block (oben rechts)
     let senderBlock = '';
     if (data.your_name) senderBlock += `<div>${data.your_name}</div>`;
     if (data.your_address) {
@@ -708,7 +727,7 @@ function updatePDFPreview() {
     if (data.your_phone) senderBlock += `<div>Tel.: ${data.your_phone}</div>`;
     if (data.your_email) senderBlock += `<div>${data.your_email}</div>`;
     
-    // Build recipient
+    // Build recipient (Empfänger links)
     let recipient = '';
     if (data.company) recipient += `<div>${data.company}</div>`;
     if (data.contact_person) recipient += `<div>${data.contact_person}</div>`;
@@ -718,10 +737,10 @@ function updatePDFPreview() {
         });
     }
     
-    // Subject
+    // Subject (Betreff)
     const subject = data.subject || (data.job_title ? `Bewerbung als ${data.job_title}` : 'Bewerbung');
     
-    // Render PDF preview
+    // Render PDF preview - DIN 5008 Layout
     const preview = document.getElementById('pdfPreview');
     preview.innerHTML = `
         <div class="pdf-sender-block">${senderBlock}</div>

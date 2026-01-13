@@ -2,6 +2,368 @@
 
 {% block title %}Textgenerator - BewerbungsManager{% endblock %}
 
+{% block head %}
+<!-- Quill.js Rich Text Editor -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    /* Rich Text Editor Styles */
+    .editor-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding: 0.75rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-bottom: none;
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+    
+    .toolbar-group {
+        display: flex;
+        gap: 0.25rem;
+        padding-right: 0.75rem;
+        border-right: 1px solid var(--border-color);
+    }
+    
+    .toolbar-group:last-child {
+        border-right: none;
+        padding-right: 0;
+    }
+    
+    .toolbar-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+    }
+    
+    .toolbar-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+        border-color: var(--accent-primary);
+    }
+    
+    .toolbar-btn.active {
+        background: rgba(0, 212, 170, 0.15);
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+    
+    .toolbar-select {
+        height: 32px;
+        padding: 0 0.5rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    
+    .toolbar-select:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+    
+    /* Rich Text Editor Container */
+    .rich-editor-container {
+        border: 1px solid var(--border-color);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        overflow: hidden;
+    }
+    
+    .rich-editor {
+        min-height: 350px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+    
+    .rich-editor:focus {
+        outline: none;
+    }
+    
+    /* Quill Overrides */
+    .ql-container {
+        border: none !important;
+        font-family: var(--font-sans) !important;
+    }
+    
+    .ql-editor {
+        min-height: 350px;
+        padding: 1rem;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+    
+    .ql-editor.ql-blank::before {
+        color: var(--text-muted);
+        font-style: normal;
+    }
+    
+    .ql-toolbar {
+        border: none !important;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-color) !important;
+        padding: 0.75rem !important;
+    }
+    
+    .ql-toolbar .ql-stroke {
+        stroke: var(--text-secondary);
+    }
+    
+    .ql-toolbar .ql-fill {
+        fill: var(--text-secondary);
+    }
+    
+    .ql-toolbar .ql-picker {
+        color: var(--text-secondary);
+    }
+    
+    .ql-toolbar .ql-picker-options {
+        background: var(--bg-secondary);
+        border-color: var(--border-color);
+    }
+    
+    .ql-toolbar .ql-picker-item:hover {
+        color: var(--accent-primary);
+    }
+    
+    .ql-toolbar button:hover .ql-stroke,
+    .ql-toolbar button.ql-active .ql-stroke {
+        stroke: var(--accent-primary);
+    }
+    
+    .ql-toolbar button:hover .ql-fill,
+    .ql-toolbar button.ql-active .ql-fill {
+        fill: var(--accent-primary);
+    }
+    
+    .ql-toolbar button:hover,
+    .ql-toolbar button.ql-active {
+        color: var(--accent-primary);
+    }
+    
+    .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+        border-color: var(--accent-primary);
+    }
+    
+    .ql-snow .ql-picker.ql-expanded .ql-picker-options {
+        border-color: var(--border-color);
+    }
+    
+    /* PDF Preview Styles */
+    .pdf-preview-container {
+        background: #fff;
+        border-radius: var(--radius-md);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .pdf-preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .pdf-preview-title {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+    }
+    
+    .pdf-preview-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .pdf-page {
+        background: #fff;
+        color: #000;
+        padding: 25mm 20mm 25mm 25mm;
+        min-height: 297mm;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.4;
+        position: relative;
+        transform-origin: top left;
+    }
+    
+    .pdf-page.scaled {
+        transform: scale(0.5);
+        width: 200%;
+    }
+    
+    .pdf-sender-block {
+        position: absolute;
+        top: 27mm;
+        right: 20mm;
+        text-align: right;
+        font-size: 10pt;
+    }
+    
+    .pdf-sender-line {
+        font-size: 7pt;
+        color: #666;
+        border-bottom: 0.5px solid #666;
+        padding-bottom: 2px;
+        margin-bottom: 15mm;
+        display: inline-block;
+    }
+    
+    .pdf-recipient {
+        margin-top: 50.8mm;
+        margin-bottom: 10mm;
+        font-size: 11pt;
+    }
+    
+    .pdf-date {
+        text-align: right;
+        margin-bottom: 15mm;
+        font-size: 11pt;
+    }
+    
+    .pdf-subject {
+        font-weight: bold;
+        margin-bottom: 10mm;
+        font-size: 11pt;
+    }
+    
+    .pdf-body {
+        font-size: 11pt;
+        line-height: 1.5;
+        text-align: justify;
+    }
+    
+    .pdf-body p {
+        margin-bottom: 1em;
+    }
+    
+    .pdf-body ul, .pdf-body ol {
+        margin-left: 8mm;
+        margin-bottom: 1em;
+    }
+    
+    .pdf-body li {
+        margin-bottom: 0.5em;
+    }
+    
+    /* Preview Scale Controls */
+    .preview-scale-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .scale-btn {
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    
+    .scale-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+    }
+    
+    .scale-value {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        min-width: 40px;
+        text-align: center;
+    }
+    
+    /* Preview Wrapper for Scrolling */
+    .pdf-preview-wrapper {
+        max-height: 600px;
+        overflow: auto;
+        background: #e0e0e0;
+        padding: 20px;
+    }
+    
+    /* Tab Navigation */
+    .editor-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 0;
+    }
+    
+    .editor-tab {
+        padding: 0.75rem 1.5rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-bottom: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+        margin-right: -1px;
+    }
+    
+    .editor-tab:hover {
+        color: var(--text-primary);
+        background: var(--bg-hover);
+    }
+    
+    .editor-tab.active {
+        background: var(--bg-secondary);
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+        border-bottom-color: var(--bg-secondary);
+        position: relative;
+        z-index: 1;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    /* Layout Adjustments */
+    .generator-layout {
+        display: grid;
+        grid-template-columns: 400px 1fr;
+        gap: 1.5rem;
+    }
+    
+    @media (max-width: 1200px) {
+        .generator-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">
@@ -16,7 +378,7 @@
     {% endif %}
 </div>
 
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+<div class="generator-layout">
     <!-- Left Column: Input Form -->
     <div class="card fade-in">
         <div class="card-header">
@@ -105,92 +467,111 @@
         </form>
     </div>
     
-    <!-- Right Column: Template & Output -->
+    <!-- Right Column: Editor & Preview -->
     <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Template Selection & Editor -->
         <div class="card fade-in" style="animation-delay: 0.1s;">
             <div class="card-header">
                 <h2 class="card-title">
                     <i class="bi bi-code-square"></i>
                     Textvorlage
                 </h2>
-                {% if templates %}
-                <select id="templateSelect" class="form-control" style="width: auto; min-width: 200px;" onchange="loadTemplate(this.value)">
-                    {% for tpl in templates %}
-                    <option value="{{ tpl.id }}" {% if selected_template and selected_template.id == tpl.id %}selected{% endif %}>
-                        {{ tpl.name }}{% if tpl.is_default %} ★{% endif %}
-                    </option>
-                    {% endfor %}
-                </select>
-                {% else %}
-                <a href="{{ url_for('template_new') }}" class="btn btn-secondary btn-sm">
-                    <i class="bi bi-plus-lg"></i>
-                    Vorlage erstellen
-                </a>
-                {% endif %}
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    {% if templates %}
+                    <select id="templateSelect" class="form-control" style="width: auto; min-width: 200px;" onchange="loadTemplate(this.value)">
+                        {% for tpl in templates %}
+                        <option value="{{ tpl.id }}" {% if selected_template and selected_template.id == tpl.id %}selected{% endif %}>
+                            {{ tpl.name }}{% if tpl.is_default %} ★{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <a href="{{ url_for('template_new') }}" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-plus-lg"></i>
+                        Vorlage erstellen
+                    </a>
+                    {% endif %}
+                </div>
             </div>
             
+            <!-- Placeholder Tags -->
             <div class="placeholder-tags">
                 {% for placeholder in placeholders %}
                 <span class="placeholder-tag" onclick="insertPlaceholder('{{ placeholder }}')">{{ placeholder }}</span>
                 {% endfor %}
             </div>
             
-            <div class="form-group" style="margin-bottom: 0;">
-                <textarea id="templateInput" class="form-control template-textarea" rows="12"
-                          placeholder="Geben Sie hier Ihre Vorlage ein...">{{ default_template }}</textarea>
+            <!-- Tab Navigation -->
+            <div class="editor-tabs">
+                <button class="editor-tab active" onclick="switchTab('editor')">
+                    <i class="bi bi-pencil-square"></i> Editor
+                </button>
+                <button class="editor-tab" onclick="switchTab('preview')">
+                    <i class="bi bi-eye"></i> PDF Vorschau
+                </button>
             </div>
-        </div>
-        
-        <div class="card fade-in" style="animation-delay: 0.2s;">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <i class="bi bi-file-text"></i>
-                    Generierter Text
-                </h2>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button type="button" class="btn btn-primary btn-sm" onclick="generateText()">
-                        <i class="bi bi-lightning"></i>
-                        Generieren
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="copyToClipboard()">
-                        <i class="bi bi-clipboard"></i>
-                        Kopieren
-                    </button>
-                    {% if application %}
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="saveLetter()">
-                        <i class="bi bi-save"></i>
-                        Speichern
-                    </button>
-                    {% endif %}
+            
+            <!-- Editor Tab -->
+            <div id="editorTab" class="tab-content active">
+                <div id="templateEditor"></div>
+            </div>
+            
+            <!-- Preview Tab -->
+            <div id="previewTab" class="tab-content">
+                <div class="pdf-preview-container">
+                    <div class="pdf-preview-header">
+                        <span class="pdf-preview-title">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                            DIN 5008 Brief Vorschau
+                        </span>
+                        <div class="preview-scale-controls">
+                            <button class="scale-btn" onclick="changePreviewScale(-10)">
+                                <i class="bi bi-dash"></i>
+                            </button>
+                            <span class="scale-value" id="scaleValue">50%</span>
+                            <button class="scale-btn" onclick="changePreviewScale(10)">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="pdf-preview-wrapper">
+                        <div id="pdfPreview" class="pdf-page" style="transform: scale(0.5); transform-origin: top left;">
+                            <!-- PDF Content will be rendered here -->
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="form-group" style="margin-bottom: 0;">
-                <textarea id="outputText" class="form-control output-textarea" rows="12" readonly
-                          placeholder="Klicke auf 'Generieren' um den Text zu erstellen..."></textarea>
+            <!-- Action Buttons -->
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary" onclick="generateText()">
+                    <i class="bi bi-lightning"></i>
+                    Text generieren
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="copyToClipboard()">
+                    <i class="bi bi-clipboard"></i>
+                    Kopieren
+                </button>
+                {% if application %}
+                <button type="button" class="btn btn-secondary" onclick="saveLetter()">
+                    <i class="bi bi-save"></i>
+                    Speichern
+                </button>
+                {% endif %}
+                <button type="button" class="btn btn-primary" onclick="exportPDF()" id="exportPdfBtn">
+                    <i class="bi bi-file-earmark-pdf"></i>
+                    PDF herunterladen
+                </button>
             </div>
             
-            <!-- PDF Export Button (nur sichtbar wenn Text generiert) -->
-            <div id="pdfExportSection" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                <button type="button" class="btn btn-primary" onclick="exportPDF()" style="width: 100%;">
-                    <i class="bi bi-file-earmark-pdf"></i>
-                    Als DIN-Brief PDF herunterladen
-                </button>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; text-align: center;">
-                    Erstellt einen formatierten Brief nach DIN 5008
-                </p>
-                
-                {% if not application %}
-                <!-- Als Entwurf speichern Button (nur wenn keine Bewerbung verknüpft) -->
-                <button type="button" class="btn btn-secondary" onclick="saveAsDraft()" style="width: 100%; margin-top: 0.75rem;">
+            {% if not application %}
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <button type="button" class="btn btn-secondary" onclick="saveAsDraft()" style="width: 100%;">
                     <i class="bi bi-bookmark-plus"></i>
                     Als Entwurf in Bewerbungen speichern
                 </button>
-                <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; text-align: center;">
-                    Speichert die Bewerbung mit Status "Entwurf" in der Übersicht
-                </p>
-                {% endif %}
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -217,17 +598,145 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Quill.js -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
 <script>
-const defaultTemplate = `{{ default_template | replace('\n', '\\n') | replace("'", "\\'") | safe }}`;
+// Initialize Quill Editor
+const quill = new Quill('#templateEditor', {
+    theme: 'snow',
+    placeholder: 'Geben Sie hier Ihre Vorlage ein...',
+    modules: {
+        toolbar: [
+            [{ 'font': [] }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            [{ 'align': [] }],
+            ['clean']
+        ]
+    }
+});
+
+// Set initial content
+const defaultTemplate = `{{ default_template | replace('\n', '\\n') | replace("'", "\\'") | replace('\r', '') | safe }}`;
+quill.root.innerHTML = defaultTemplate.replace(/\n/g, '<br>');
+
+// Preview scale
+let previewScale = 50;
+
+function changePreviewScale(delta) {
+    previewScale = Math.max(25, Math.min(100, previewScale + delta));
+    document.getElementById('scaleValue').textContent = previewScale + '%';
+    document.getElementById('pdfPreview').style.transform = `scale(${previewScale / 100})`;
+}
+
+function switchTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.editor-tab').forEach(btn => btn.classList.remove('active'));
+    event.target.closest('.editor-tab').classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    if (tab === 'editor') {
+        document.getElementById('editorTab').classList.add('active');
+    } else {
+        document.getElementById('previewTab').classList.add('active');
+        updatePDFPreview();
+    }
+}
+
+function updatePDFPreview() {
+    const data = getFormData();
+    const content = quill.root.innerHTML;
+    
+    // Replace placeholders in content
+    let renderedContent = content;
+    renderedContent = renderedContent.replace(/\{\{company\}\}/g, data.company || '[Unternehmen]');
+    renderedContent = renderedContent.replace(/\{\{company_address\}\}/g, (data.company_address || '[Adresse]').replace(/\n/g, '<br>'));
+    renderedContent = renderedContent.replace(/\{\{job_title\}\}/g, data.job_title || '[Position]');
+    renderedContent = renderedContent.replace(/\{\{contact_person\}\}/g, data.contact_person || '');
+    renderedContent = renderedContent.replace(/\{\{your_name\}\}/g, data.your_name || '[Ihr Name]');
+    renderedContent = renderedContent.replace(/\{\{your_address\}\}/g, (data.your_address || '[Ihre Adresse]').replace(/\n/g, '<br>'));
+    renderedContent = renderedContent.replace(/\{\{your_email\}\}/g, data.your_email || '[E-Mail]');
+    renderedContent = renderedContent.replace(/\{\{your_phone\}\}/g, data.your_phone || '[Telefon]');
+    renderedContent = renderedContent.replace(/\{\{subject\}\}/g, data.subject || `Bewerbung als ${data.job_title || '[Position]'}`);
+    
+    // Format date
+    let dateStr = data.date;
+    if (dateStr) {
+        const dateObj = new Date(dateStr);
+        dateStr = dateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    renderedContent = renderedContent.replace(/\{\{date\}\}/g, dateStr || new Date().toLocaleDateString('de-DE'));
+    
+    // Extract location from address
+    let location = 'Ort';
+    if (data.your_address) {
+        const lines = data.your_address.split('\n');
+        if (lines.length > 0) {
+            const lastLine = lines[lines.length - 1].trim();
+            const parts = lastLine.split(' ');
+            if (parts.length > 1) {
+                location = parts.slice(1).join(' ');
+            }
+        }
+    }
+    
+    // Build sender line
+    const senderParts = [];
+    if (data.your_name) senderParts.push(data.your_name);
+    if (data.your_address) {
+        data.your_address.split('\n').forEach(line => {
+            if (line.trim()) senderParts.push(line.trim());
+        });
+    }
+    const senderLine = senderParts.join(' · ');
+    
+    // Build sender block
+    let senderBlock = '';
+    if (data.your_name) senderBlock += `<div>${data.your_name}</div>`;
+    if (data.your_address) {
+        data.your_address.split('\n').forEach(line => {
+            if (line.trim()) senderBlock += `<div>${line.trim()}</div>`;
+        });
+    }
+    senderBlock += '<div style="height: 6px;"></div>';
+    if (data.your_phone) senderBlock += `<div>Tel.: ${data.your_phone}</div>`;
+    if (data.your_email) senderBlock += `<div>${data.your_email}</div>`;
+    
+    // Build recipient
+    let recipient = '';
+    if (data.company) recipient += `<div>${data.company}</div>`;
+    if (data.contact_person) recipient += `<div>${data.contact_person}</div>`;
+    if (data.company_address) {
+        data.company_address.split('\n').forEach(line => {
+            if (line.trim()) recipient += `<div>${line.trim()}</div>`;
+        });
+    }
+    
+    // Subject
+    const subject = data.subject || (data.job_title ? `Bewerbung als ${data.job_title}` : 'Bewerbung');
+    
+    // Render PDF preview
+    const preview = document.getElementById('pdfPreview');
+    preview.innerHTML = `
+        <div class="pdf-sender-block">${senderBlock}</div>
+        <div class="pdf-sender-line">${senderLine}</div>
+        <div class="pdf-recipient">${recipient}</div>
+        <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
+        <div class="pdf-subject">${subject}</div>
+        <div class="pdf-body">${renderedContent}</div>
+    `;
+}
 
 function insertPlaceholder(placeholder) {
-    const textarea = document.getElementById('templateInput');
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    textarea.value = text.substring(0, start) + placeholder + text.substring(end);
-    textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
-    textarea.focus();
+    const range = quill.getSelection(true);
+    quill.insertText(range.index, placeholder);
+    quill.setSelection(range.index + placeholder.length);
 }
 
 async function loadTemplate(templateId) {
@@ -238,7 +747,7 @@ async function loadTemplate(templateId) {
         const result = await response.json();
         
         if (result.success) {
-            document.getElementById('templateInput').value = result.template.content;
+            quill.root.innerHTML = result.template.content.replace(/\n/g, '<br>');
             showToast('Vorlage "' + result.template.name + '" geladen');
         }
     } catch (error) {
@@ -253,52 +762,83 @@ function getFormData() {
     formData.forEach((value, key) => {
         data[key] = value;
     });
-    data.template = document.getElementById('templateInput').value;
     return data;
+}
+
+function getEditorContent() {
+    // Get HTML content from Quill
+    return quill.root.innerHTML;
+}
+
+function getPlainTextContent() {
+    // Get plain text from Quill
+    return quill.getText();
 }
 
 async function generateText() {
     const data = getFormData();
+    const content = getEditorContent();
     
-    try {
-        const response = await fetch('/api/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            document.getElementById('outputText').value = result.text;
-            // PDF Export Button anzeigen
-            document.getElementById('pdfExportSection').style.display = 'block';
-            showToast('Text erfolgreich generiert!');
-        } else {
-            document.getElementById('outputText').value = 'Fehler: ' + result.error;
-            document.getElementById('pdfExportSection').style.display = 'none';
-        }
-    } catch (error) {
-        document.getElementById('outputText').value = 'Fehler bei der Verbindung: ' + error.message;
-        document.getElementById('pdfExportSection').style.display = 'none';
+    // Replace placeholders
+    let renderedContent = content;
+    renderedContent = renderedContent.replace(/\{\{company\}\}/g, data.company || '');
+    renderedContent = renderedContent.replace(/\{\{company_address\}\}/g, (data.company_address || '').replace(/\n/g, '<br>'));
+    renderedContent = renderedContent.replace(/\{\{job_title\}\}/g, data.job_title || '');
+    renderedContent = renderedContent.replace(/\{\{contact_person\}\}/g, data.contact_person || '');
+    renderedContent = renderedContent.replace(/\{\{your_name\}\}/g, data.your_name || '');
+    renderedContent = renderedContent.replace(/\{\{your_address\}\}/g, (data.your_address || '').replace(/\n/g, '<br>'));
+    renderedContent = renderedContent.replace(/\{\{your_email\}\}/g, data.your_email || '');
+    renderedContent = renderedContent.replace(/\{\{your_phone\}\}/g, data.your_phone || '');
+    
+    // Format date
+    let dateStr = data.date;
+    if (dateStr) {
+        const dateObj = new Date(dateStr);
+        dateStr = dateObj.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
+    renderedContent = renderedContent.replace(/\{\{date\}\}/g, dateStr || '');
+    
+    // Subject
+    const subject = data.subject || (data.job_title ? `Bewerbung als ${data.job_title}` : '');
+    renderedContent = renderedContent.replace(/\{\{subject\}\}/g, subject);
+    
+    // Update editor with rendered content
+    quill.root.innerHTML = renderedContent;
+    
+    showToast('Text erfolgreich generiert!');
+    
+    // Switch to preview tab
+    document.querySelectorAll('.editor-tab').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.editor-tab')[1].classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.getElementById('previewTab').classList.add('active');
+    updatePDFPreview();
 }
 
 async function exportPDF() {
-    const outputText = document.getElementById('outputText').value;
-    if (!outputText) {
-        showToast('Bitte zuerst Text generieren!', 'warning');
+    const data = getFormData();
+    const htmlContent = getEditorContent();
+    
+    // Convert HTML to plain text with formatting markers
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    const bodyText = tempDiv.innerText || tempDiv.textContent;
+    
+    if (!bodyText.trim()) {
+        showToast('Bitte zuerst Text eingeben!', 'warning');
         return;
     }
     
-    const data = getFormData();
-    data.body_text = outputText;
+    // Prepare data for PDF export
+    const pdfData = {
+        ...data,
+        body_text: bodyText,
+        html_content: htmlContent
+    };
     
-    // Betreff automatisch generieren falls leer
-    if (!data.subject && data.job_title) {
-        data.subject = 'Bewerbung als ' + data.job_title;
+    // Auto-generate subject if empty
+    if (!pdfData.subject && pdfData.job_title) {
+        pdfData.subject = 'Bewerbung als ' + pdfData.job_title;
     }
     
     try {
@@ -309,17 +849,15 @@ async function exportPDF() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(pdfData)
         });
         
         if (response.ok) {
-            // PDF als Blob herunterladen
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             
-            // Dateiname aus Content-Disposition Header oder generieren
             const contentDisposition = response.headers.get('Content-Disposition');
             let filename = 'Bewerbung.pdf';
             if (contentDisposition) {
@@ -346,26 +884,23 @@ async function exportPDF() {
 }
 
 function copyToClipboard() {
-    const outputText = document.getElementById('outputText');
-    if (!outputText.value) {
+    const text = getPlainTextContent();
+    if (!text.trim()) {
         showToast('Kein Text zum Kopieren vorhanden!', 'warning');
         return;
     }
     
-    navigator.clipboard.writeText(outputText.value).then(() => {
+    navigator.clipboard.writeText(text).then(() => {
         showToast('In Zwischenablage kopiert!');
     }).catch(err => {
-        // Fallback for older browsers
-        outputText.select();
-        document.execCommand('copy');
-        showToast('In Zwischenablage kopiert!');
+        showToast('Fehler beim Kopieren', 'error');
     });
 }
 
 async function saveAsDraft() {
     const data = getFormData();
-    const outputText = document.getElementById('outputText').value;
-    const template = document.getElementById('templateInput').value;
+    const htmlContent = getEditorContent();
+    const template = quill.root.innerHTML;
     
     if (!data.company) {
         showToast('Bitte Unternehmen eingeben!', 'warning');
@@ -387,7 +922,7 @@ async function saveAsDraft() {
                 job_title: data.job_title,
                 company_address: data.company_address,
                 contact_person: data.contact_person,
-                generated_text: outputText,
+                generated_text: getPlainTextContent(),
                 template_used: template
             })
         });
@@ -396,7 +931,6 @@ async function saveAsDraft() {
         
         if (result.success) {
             showToast(result.message);
-            // Nach kurzer Verzögerung zur Bewerbungsübersicht weiterleiten
             setTimeout(() => {
                 window.location.href = '/applications';
             }, 1500);
@@ -410,11 +944,11 @@ async function saveAsDraft() {
 
 {% if application %}
 async function saveLetter() {
-    const outputText = document.getElementById('outputText').value;
-    const template = document.getElementById('templateInput').value;
+    const htmlContent = getEditorContent();
+    const template = quill.root.innerHTML;
     
-    if (!outputText) {
-        showToast('Bitte zuerst Text generieren!', 'warning');
+    if (!htmlContent.trim()) {
+        showToast('Bitte zuerst Text eingeben!', 'warning');
         return;
     }
     
@@ -427,7 +961,7 @@ async function saveLetter() {
             body: JSON.stringify({
                 application_id: {{ application.id }},
                 template_used: template,
-                rendered_text: outputText
+                rendered_text: getPlainTextContent()
             })
         });
         
@@ -468,12 +1002,17 @@ function showToast(message, type = 'success') {
     }, 3000);
 }
 
-// Generate on page load if application is linked
+// Auto-generate on page load if application is linked
 {% if application %}
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-generate if we have application data
     setTimeout(generateText, 500);
 });
 {% endif %}
+
+// Update preview when switching tabs
+document.addEventListener('DOMContentLoaded', function() {
+    // Initial preview update
+    updatePDFPreview();
+});
 </script>
 {% endblock %}

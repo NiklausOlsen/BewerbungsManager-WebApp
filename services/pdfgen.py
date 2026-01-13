@@ -1,22 +1,118 @@
 """
 PDF Generator für DIN 5008 konforme Geschäftsbriefe
+Mit Unterstützung für Rich-Text-Formatierung (Fett, Kursiv, Listen)
 """
 import io
 import os
+import re
 from datetime import datetime
+from html.parser import HTMLParser
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm, cm
 from reportlab.pdfgen import canvas
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import Paragraph
-from reportlab.lib.enums import TA_LEFT, TA_JUSTIFY
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, ListFlowable, ListItem
+from reportlab.lib.enums import TA_LEFT, TA_JUSTIFY, TA_RIGHT
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+
+
+class HTMLToTextConverter(HTMLParser):
+    """Konvertiert HTML zu formatiertem Text mit Markup-Informationen"""
+    
+    def __init__(self):
+        super().__init__()
+        self.result = []
+        self.current_text = ""
+        self.styles = []  # Stack für aktive Styles
+        self.in_list = False
+        self.list_type = None  # 'ul' oder 'ol'
+        self.list_items = []
+        self.list_counter = 0
+        
+    def handle_starttag(self, tag, attrs):
+        tag = tag.lower()
+        if tag in ['b', 'strong']:
+            self.styles.append('bold')
+        elif tag in ['i', 'em']:
+            self.styles.append('italic')
+        elif tag == 'u':
+            self.styles.append('underline')
+        elif tag == 'ul':
+            self._flush_text()
+            self.in_list = True
+            self.list_type = 'ul'
+            self.list_items = []
+        elif tag == 'ol':
+            self._flush_text()
+            self.in_list = True
+            self.list_type = 'ol'
+            self.list_items = []
+            self.list_counter = 0
+        elif tag == 'li':
+            self.current_text = ""
+        elif tag == 'br':
+            self.current_text += '\n'
+        elif tag == 'p':
+            self._flush_text()
+        elif tag == 'div':
+            self._flush_text()
+            
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag in ['b', 'strong'] and 'bold' in self.styles:
+            self.styles.remove('bold')
+        elif tag in ['i', 'em'] and 'italic' in self.styles:
+            self.styles.remove('italic')
+        elif tag == 'u' and 'underline' in self.styles:
+            self.styles.remove('underline')
+        elif tag == 'li':
+            if self.in_list:
+                self.list_counter += 1
+                prefix = '• ' if self.list_type == 'ul' else f'{self.list_counter}. '
+                self.list_items.append({
+                    'prefix': prefix,
+                    'text': self.current_text.strip(),
+                    'styles': self.styles.copy()
+                })
+                self.current_text = ""
+        elif tag in ['ul', 'ol']:
+            if self.list_items:
+                self.result.append({
+                    'type': 'list',
+                    'list_type': self.list_type,
+                    'items': self.list_items
+                })
+            self.in_list = False
+            self.list_type = None
+            self.list_items = []
+        elif tag == 'p':
+            self._flush_text()
+            self.result.append({'type': 'paragraph_break'})
+        elif tag == 'div':
+            self._flush_text()
+            
+    def handle_data(self, data):
+        self.current_text += data
+        
+    def _flush_text(self):
+        if self.current_text.strip():
+            self.result.append({
+                'type': 'text',
+                'content': self.current_text.strip(),
+                'styles': self.styles.copy()
+            })
+        self.current_text = ""
+        
+    def get_result(self):
+        self._flush_text()
+        return self.result
 
 
 class DINBriefGenerator:
     """
     Generiert DIN 5008 konforme Geschäftsbriefe als PDF
+    Mit Unterstützung für Rich-Text-Formatierung
     
     DIN 5008 Maße (Form B):
     - Linker Rand: 25 mm
@@ -69,13 +165,10 @@ class DINBriefGenerator:
         """Registriert Avenir Next oder Fallback-Schriften"""
         self.font_name = 'Helvetica'
         self.font_name_bold = 'Helvetica-Bold'
+        self.font_name_italic = 'Helvetica-Oblique'
+        self.font_name_bold_italic = 'Helvetica-BoldOblique'
         
         # Avenir Next TTC auf macOS
-        # Subfont-Indizes:
-        # 0 = Bold, 1 = Bold Italic, 2 = Demi Bold, 3 = Demi Bold Italic
-        # 4 = Italic, 5 = Medium, 6 = Medium Italic, 7 = Regular
-        # 8 = Heavy, 9 = Heavy Italic, 10 = Ultra Light, 11 = Ultra Light Italic
-        
         avenir_path = '/System/Library/Fonts/Avenir Next.ttc'
         
         try:
@@ -84,18 +177,48 @@ class DINBriefGenerator:
                 pdfmetrics.registerFont(TTFont('AvenirNext', avenir_path, subfontIndex=7))
                 # Avenir Next Bold (Index 0)
                 pdfmetrics.registerFont(TTFont('AvenirNext-Bold', avenir_path, subfontIndex=0))
+                # Avenir Next Italic (Index 4)
+                pdfmetrics.registerFont(TTFont('AvenirNext-Italic', avenir_path, subfontIndex=4))
+                # Avenir Next Bold Italic (Index 1)
+                pdfmetrics.registerFont(TTFont('AvenirNext-BoldItalic', avenir_path, subfontIndex=1))
                 
                 self.font_name = 'AvenirNext'
                 self.font_name_bold = 'AvenirNext-Bold'
-                print("Avenir Next erfolgreich geladen")
+                self.font_name_italic = 'AvenirNext-Italic'
+                self.font_name_bold_italic = 'AvenirNext-BoldItalic'
                 return
                         
         except Exception as e:
-            print(f"Avenir Next nicht verfügbar, verwende Helvetica: {e}")
+            pass
         
         # Fallback zu Helvetica
         self.font_name = 'Helvetica'
         self.font_name_bold = 'Helvetica-Bold'
+        self.font_name_italic = 'Helvetica-Oblique'
+        self.font_name_bold_italic = 'Helvetica-BoldOblique'
+    
+    def _get_font_for_styles(self, styles):
+        """Gibt den passenden Font für die gegebenen Styles zurück"""
+        is_bold = 'bold' in styles
+        is_italic = 'italic' in styles
+        
+        if is_bold and is_italic:
+            return self.font_name_bold_italic
+        elif is_bold:
+            return self.font_name_bold
+        elif is_italic:
+            return self.font_name_italic
+        else:
+            return self.font_name
+    
+    def _parse_html_content(self, html_content):
+        """Parst HTML-Content und extrahiert formatierte Textblöcke"""
+        if not html_content:
+            return []
+        
+        parser = HTMLToTextConverter()
+        parser.feed(html_content)
+        return parser.get_result()
     
     def generate_pdf(self, data):
         """
@@ -111,7 +234,8 @@ class DINBriefGenerator:
             'contact_person': str,
             'date': str,
             'subject': str,
-            'body_text': str  # Der generierte Brieftext
+            'body_text': str,  # Plain text (Fallback)
+            'html_content': str  # Optional: HTML-formatierter Text
         }
         """
         buffer = io.BytesIO()
@@ -132,8 +256,11 @@ class DINBriefGenerator:
         # Betreff
         self._draw_subject(c, data)
         
-        # Brieftext
-        self._draw_body_text(c, data)
+        # Brieftext (mit Rich-Text-Unterstützung)
+        if data.get('html_content'):
+            self._draw_rich_body_text(c, data)
+        else:
+            self._draw_body_text(c, data)
         
         c.save()
         buffer.seek(0)
@@ -250,8 +377,86 @@ class DINBriefGenerator:
             c.setFont(self.font_name_bold, self.FONT_SIZE)
             c.drawString(self.LEFT_MARGIN, self.SUBJECT_Y, subject)
     
+    def _draw_rich_body_text(self, c, data):
+        """Zeichnet den Brieftext mit Rich-Text-Formatierung"""
+        html_content = data.get('html_content', '')
+        if not html_content:
+            return self._draw_body_text(c, data)
+        
+        # Parse HTML content
+        parsed = self._parse_html_content(html_content)
+        
+        y = self.TEXT_START_Y
+        x = self.LEFT_MARGIN
+        
+        for block in parsed:
+            if block['type'] == 'text':
+                font = self._get_font_for_styles(block.get('styles', []))
+                c.setFont(font, self.FONT_SIZE)
+                
+                # Text umbrechen
+                text = block['content']
+                wrapped_lines = self._wrap_text(text, self.TEXT_WIDTH, c, font)
+                
+                for line in wrapped_lines:
+                    # Unterstreichung zeichnen falls nötig
+                    if 'underline' in block.get('styles', []):
+                        text_width = c.stringWidth(line, font, self.FONT_SIZE)
+                        c.setLineWidth(0.5)
+                        c.line(x, y - 2, x + text_width, y - 2)
+                    
+                    c.drawString(x, y, line)
+                    y -= self.LINE_HEIGHT
+                    
+                    # Seitenumbruch wenn nötig
+                    if y < 30 * mm:
+                        c.showPage()
+                        c.setFont(font, self.FONT_SIZE)
+                        y = 297 * mm - 25 * mm
+                        
+            elif block['type'] == 'paragraph_break':
+                y -= self.PARAGRAPH_SPACING
+                
+            elif block['type'] == 'list':
+                y -= 6  # Abstand vor der Liste
+                
+                for item in block['items']:
+                    font = self._get_font_for_styles(item.get('styles', []))
+                    c.setFont(font, self.FONT_SIZE)
+                    
+                    # Aufzählungszeichen
+                    bullet_x = x + 5 * mm
+                    c.setFont(self.font_name, self.FONT_SIZE)
+                    c.drawString(bullet_x, y, item['prefix'].strip())
+                    
+                    # Text mit Einrückung
+                    text_x = x + self.BULLET_INDENT
+                    text_width = self.TEXT_WIDTH - self.BULLET_INDENT
+                    
+                    c.setFont(font, self.FONT_SIZE)
+                    wrapped_lines = self._wrap_text(item['text'], text_width, c, font)
+                    
+                    for i, line in enumerate(wrapped_lines):
+                        if i == 0:
+                            c.drawString(text_x, y, line)
+                        else:
+                            c.drawString(text_x, y, line)
+                        y -= self.LINE_HEIGHT
+                    
+                    y -= self.BULLET_SPACING / 2
+                    
+                    # Seitenumbruch wenn nötig
+                    if y < 30 * mm:
+                        c.showPage()
+                        c.setFont(font, self.FONT_SIZE)
+                        y = 297 * mm - 25 * mm
+                
+                y -= 6  # Abstand nach der Liste
+        
+        return y
+    
     def _draw_body_text(self, c, data):
-        """Zeichnet den Brieftext mit verbesserter Formatierung"""
+        """Zeichnet den Brieftext (Plain Text Fallback)"""
         body_text = data.get('body_text', '')
         if not body_text:
             return
@@ -286,7 +491,6 @@ class DINBriefGenerator:
             # Leere Zeile = Absatzende
             if not line:
                 if in_bullet_list:
-                    # Ende der Aufzählung - extra Abstand
                     y -= self.PARAGRAPH_SPACING
                     in_bullet_list = False
                 else:
@@ -299,38 +503,29 @@ class DINBriefGenerator:
             is_bullet = line.startswith('•') or line.startswith('-') or line.startswith('–') or line.startswith('*')
             
             if is_bullet:
-                # Aufzählungspunkt gefunden
                 if not in_bullet_list and not previous_was_bullet:
-                    # Beginn einer neuen Liste - kleiner Abstand davor
                     y -= 6
                 
                 in_bullet_list = True
                 
-                # Entferne das Aufzählungszeichen und führende Leerzeichen
                 bullet_text = line.lstrip('•-–* ').strip()
                 
-                # Zeichne den Aufzählungspunkt
                 c.setFont(self.font_name, self.FONT_SIZE)
                 bullet_x = x + 5 * mm
                 c.drawString(bullet_x, y, '•')
                 
-                # Zeichne den Text mit Einrückung
                 text_x = x + self.BULLET_INDENT
                 text_width = self.TEXT_WIDTH - self.BULLET_INDENT
                 
-                # Finde den fett formatierten Teil (falls vorhanden)
                 if '(' in bullet_text:
-                    # Text vor der Klammer ist fett, Text in Klammern normal
                     parts = bullet_text.split('(', 1)
                     bold_part = parts[0].strip()
                     rest_part = '(' + parts[1] if len(parts) > 1 else ''
                     
-                    # Zeichne fetten Teil (Titel des Bullet Points)
                     c.setFont(self.font_name_bold, self.FONT_SIZE)
                     c.drawString(text_x, y, bold_part)
                     y -= self.LINE_HEIGHT
                     
-                    # Zeichne Beschreibung in Klammern auf neuer Zeile (eingerückt)
                     if rest_part:
                         c.setFont(self.font_name, self.FONT_SIZE)
                         wrapped_lines = self._wrap_text(rest_part, text_width, c)
@@ -338,10 +533,8 @@ class DINBriefGenerator:
                             c.drawString(text_x, y, wline)
                             y -= self.LINE_HEIGHT
                     
-                    # Abstand nach dem Bullet Point
                     y -= self.BULLET_SPACING
                 else:
-                    # Kein fetter Teil, normaler Text
                     wrapped_lines = self._wrap_text(bullet_text, text_width, c)
                     for j, wline in enumerate(wrapped_lines):
                         c.setFont(self.font_name, self.FONT_SIZE)
@@ -352,7 +545,6 @@ class DINBriefGenerator:
                 previous_was_bullet = True
                 
             else:
-                # Normaler Absatz
                 in_bullet_list = False
                 previous_was_bullet = False
                 
@@ -373,15 +565,18 @@ class DINBriefGenerator:
         
         return y
     
-    def _wrap_text(self, text, max_width, c):
+    def _wrap_text(self, text, max_width, c, font_name=None):
         """Bricht Text um wenn er zu lang ist"""
+        if font_name is None:
+            font_name = self.font_name
+            
         words = text.split()
         lines = []
         current_line = []
         
         for word in words:
             test_line = ' '.join(current_line + [word])
-            if c.stringWidth(test_line, self.font_name, self.FONT_SIZE) <= max_width:
+            if c.stringWidth(test_line, font_name, self.FONT_SIZE) <= max_width:
                 current_line.append(word)
             else:
                 if current_line:

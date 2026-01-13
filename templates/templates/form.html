@@ -2,6 +2,137 @@
 
 {% block title %}{{ 'Vorlage bearbeiten' if template else 'Neue Vorlage' }} - BewerbungsManager{% endblock %}
 
+{% block head %}
+<!-- Quill.js Rich Text Editor -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+<style>
+    /* Quill Editor Styles */
+    .ql-container {
+        border: none !important;
+        font-family: var(--font-sans) !important;
+    }
+    
+    .ql-editor {
+        min-height: 400px;
+        padding: 1rem;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        line-height: 1.7;
+    }
+    
+    .ql-editor.ql-blank::before {
+        color: var(--text-muted);
+        font-style: normal;
+    }
+    
+    .ql-toolbar {
+        border: 1px solid var(--border-color) !important;
+        border-bottom: none !important;
+        background: var(--bg-tertiary);
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+        padding: 0.75rem !important;
+    }
+    
+    .ql-toolbar .ql-stroke {
+        stroke: var(--text-secondary);
+    }
+    
+    .ql-toolbar .ql-fill {
+        fill: var(--text-secondary);
+    }
+    
+    .ql-toolbar .ql-picker {
+        color: var(--text-secondary);
+    }
+    
+    .ql-toolbar .ql-picker-options {
+        background: var(--bg-secondary);
+        border-color: var(--border-color);
+    }
+    
+    .ql-toolbar .ql-picker-item:hover {
+        color: var(--accent-primary);
+    }
+    
+    .ql-toolbar button:hover .ql-stroke,
+    .ql-toolbar button.ql-active .ql-stroke {
+        stroke: var(--accent-primary);
+    }
+    
+    .ql-toolbar button:hover .ql-fill,
+    .ql-toolbar button.ql-active .ql-fill {
+        fill: var(--accent-primary);
+    }
+    
+    .ql-toolbar button:hover,
+    .ql-toolbar button.ql-active {
+        color: var(--accent-primary);
+    }
+    
+    .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+        border-color: var(--accent-primary);
+    }
+    
+    .ql-snow .ql-picker.ql-expanded .ql-picker-options {
+        border-color: var(--border-color);
+    }
+    
+    .editor-container {
+        border: 1px solid var(--border-color);
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        overflow: hidden;
+        background: var(--bg-secondary);
+    }
+    
+    /* Formatting Help */
+    .formatting-help {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .formatting-help h4 {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .formatting-help ul {
+        list-style: none;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.5rem;
+    }
+    
+    .formatting-help li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+    }
+    
+    .formatting-help li i {
+        color: var(--accent-primary);
+        width: 20px;
+    }
+    
+    .formatting-help kbd {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 3px;
+        padding: 0.1rem 0.4rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1 class="page-title">
@@ -14,7 +145,7 @@
     </a>
 </div>
 
-<form method="POST" class="fade-in">
+<form method="POST" class="fade-in" id="templateForm">
     {{ form.hidden_tag() }}
     
     <div class="card" style="margin-bottom: 1.5rem;">
@@ -66,31 +197,104 @@
             {% endfor %}
         </div>
         
-        <div class="form-group">
-            {{ form.content(class="form-control template-textarea", id="templateTextarea", rows="20", placeholder="Geben Sie hier Ihre Vorlage ein...") }}
-            {% for error in form.content.errors %}
-            <span class="form-error">{{ error }}</span>
-            {% endfor %}
+        <!-- Rich Text Editor -->
+        <div id="templateEditor"></div>
+        
+        <!-- Hidden field for form submission -->
+        <input type="hidden" name="content" id="contentField" value="{{ form.content.data or '' }}">
+        
+        {% for error in form.content.errors %}
+        <span class="form-error">{{ error }}</span>
+        {% endfor %}
+        
+        <!-- Formatting Help -->
+        <div class="formatting-help">
+            <h4><i class="bi bi-keyboard"></i> Tastenkürzel</h4>
+            <ul>
+                <li><i class="bi bi-type-bold"></i> <kbd>Strg</kbd>+<kbd>B</kbd> Fett</li>
+                <li><i class="bi bi-type-italic"></i> <kbd>Strg</kbd>+<kbd>I</kbd> Kursiv</li>
+                <li><i class="bi bi-type-underline"></i> <kbd>Strg</kbd>+<kbd>U</kbd> Unterstrichen</li>
+                <li><i class="bi bi-list-ul"></i> Aufzählungen für Bullet-Points</li>
+                <li><i class="bi bi-list-ol"></i> Nummerierte Listen</li>
+            </ul>
         </div>
     </div>
     
     <div style="display: flex; gap: 1rem; justify-content: flex-end;">
         <a href="{{ url_for('settings') }}" class="btn btn-secondary">Abbrechen</a>
-        {{ form.submit(class="btn btn-primary") }}
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg"></i>
+            {{ 'Speichern' if template else 'Erstellen' }}
+        </button>
     </div>
 </form>
 {% endblock %}
 
 {% block scripts %}
+<!-- Quill.js -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
 <script>
+// Initialize Quill Editor
+const quill = new Quill('#templateEditor', {
+    theme: 'snow',
+    placeholder: 'Geben Sie hier Ihre Vorlage ein...',
+    modules: {
+        toolbar: [
+            [{ 'font': [] }],
+            [{ 'size': ['small', false, 'large', 'huge'] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+            [{ 'indent': '-1'}, { 'indent': '+1' }],
+            [{ 'align': [] }],
+            ['clean']
+        ]
+    }
+});
+
+// Set initial content
+{% if form.content.data %}
+const initialContent = `{{ form.content.data | replace('\n', '\\n') | replace("'", "\\'") | replace('\r', '') | safe }}`;
+quill.root.innerHTML = initialContent.replace(/\n/g, '<br>');
+{% endif %}
+
+// Insert placeholder at cursor position
 function insertPlaceholder(placeholder) {
-    const textarea = document.getElementById('templateTextarea');
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    textarea.value = text.substring(0, start) + placeholder + text.substring(end);
-    textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
-    textarea.focus();
+    const range = quill.getSelection(true);
+    quill.insertText(range.index, placeholder);
+    quill.setSelection(range.index + placeholder.length);
 }
+
+// Update hidden field before form submission
+document.getElementById('templateForm').addEventListener('submit', function(e) {
+    // Get HTML content from Quill
+    const htmlContent = quill.root.innerHTML;
+    
+    // Convert to plain text with line breaks preserved
+    // For backwards compatibility, we store the HTML but also convert to plain text
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    
+    // Replace <br> and </p> with newlines
+    let content = htmlContent
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<\/div>/gi, '\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<li>/gi, '• ')
+        .replace(/<[^>]+>/g, '')  // Remove remaining HTML tags
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\n\n+/g, '\n\n')  // Normalize multiple newlines
+        .trim();
+    
+    document.getElementById('contentField').value = content;
+});
+
+// Add custom styles to editor container
+document.querySelector('.ql-container').classList.add('editor-container');
 </script>
 {% endblock %}

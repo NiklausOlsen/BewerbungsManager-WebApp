@@ -205,21 +205,21 @@
         background: #fff;
         color: #000;
         width: 210mm;
-        min-height: 297mm;
+        height: 297mm;
         padding: 27mm 20mm 25mm 25mm;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         font-size: 11pt;
         line-height: 1.5;
         position: relative;
         transform-origin: top left;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         box-sizing: border-box;
-        page-break-after: always;
+        overflow: hidden;
+        flex-shrink: 0;
     }
     
-    .pdf-page.scaled {
-        transform: scale(0.5);
-        width: 200%;
+    .pdf-page + .pdf-page {
+        margin-top: 20px;
     }
     
     .pdf-sender-block {
@@ -280,20 +280,23 @@
         margin-bottom: 0.3em;
     }
     
-    /* Folgeseiten */
+    /* Folgeseiten - nur Text, kein Briefkopf */
     .pdf-page-continuation {
         background: #fff;
         color: #000;
         width: 210mm;
-        min-height: 297mm;
+        height: 297mm;
         padding: 25mm 20mm 25mm 25mm;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         font-size: 11pt;
-        line-height: 1.5;
+        line-height: 1.6;
         position: relative;
         transform-origin: top left;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         box-sizing: border-box;
+        overflow: hidden;
+        flex-shrink: 0;
+        text-align: justify;
     }
     
     .pdf-page-number {
@@ -302,6 +305,14 @@
         right: 20mm;
         font-size: 9pt;
         color: #666;
+    }
+    
+    .pdf-page-label {
+        text-align: center;
+        color: #666;
+        font-size: 11px;
+        margin-top: 5px;
+        margin-bottom: 10px;
     }
     
     /* Preview Scale Controls */
@@ -769,53 +780,98 @@ function updatePDFPreview() {
     // Subject (Betreff)
     const subject = data.subject || (data.job_title ? `Bewerbung als ${data.job_title}` : 'Bewerbung');
     
-    // Render PDF preview - DIN 5008 Layout mit automatischem Seitenumbruch
+    // Render PDF preview - DIN 5008 Layout mit echten Seitenumbrüchen
     const preview = document.getElementById('pdfPreview');
+    preview.innerHTML = '';
     
-    // Erste Seite mit Briefkopf
-    const firstPageContent = `
-        <div class="pdf-page">
-            <div class="pdf-sender-block">${senderBlock}</div>
-            <div class="pdf-sender-line">${senderLine}</div>
-            <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
-            <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
-            <div class="pdf-subject">${subject}</div>
-            <div class="pdf-body">${renderedContent}</div>
-        </div>
+    // Temporäres Element zum Messen der Texthöhe
+    const measureDiv = document.createElement('div');
+    measureDiv.style.cssText = `
+        position: absolute;
+        visibility: hidden;
+        width: 165mm;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.6;
+        text-align: justify;
     `;
+    measureDiv.innerHTML = renderedContent;
+    document.body.appendChild(measureDiv);
     
-    preview.innerHTML = firstPageContent;
+    // Höhen berechnen (mm zu px: 1mm ≈ 3.7795px bei 96 DPI)
+    const mmToPx = 3.7795275591;
+    const pageHeightPx = 297 * mmToPx;
+    const firstPageTopMargin = 115 * mmToPx; // Briefkopf + Betreff
+    const firstPageBottomMargin = 25 * mmToPx;
+    const continuationTopMargin = 25 * mmToPx;
+    const continuationBottomMargin = 25 * mmToPx;
     
-    // Prüfen ob der Inhalt überläuft und Folgeseiten benötigt werden
-    setTimeout(() => {
-        const page = preview.querySelector('.pdf-page');
-        const body = preview.querySelector('.pdf-body');
+    const firstPageAvailable = pageHeightPx - firstPageTopMargin - firstPageBottomMargin;
+    const continuationPageAvailable = pageHeightPx - continuationTopMargin - continuationBottomMargin;
+    
+    // Text in Absätze aufteilen
+    const contentHeight = measureDiv.scrollHeight;
+    document.body.removeChild(measureDiv);
+    
+    // Berechne Anzahl der Seiten
+    let remainingHeight = contentHeight;
+    let pages = [];
+    
+    // Erste Seite
+    if (remainingHeight <= firstPageAvailable) {
+        pages.push({ type: 'first', content: renderedContent });
+    } else {
+        pages.push({ type: 'first', content: renderedContent, overflow: true });
+        remainingHeight -= firstPageAvailable;
         
-        if (page && body) {
-            // A4 Höhe in Pixel (bei 96 DPI: 297mm ≈ 1123px)
-            const pageHeight = 297 * 3.7795275591; // mm to px
-            const paddingTop = 27 * 3.7795275591;
-            const paddingBottom = 25 * 3.7795275591;
-            const availableHeight = pageHeight - paddingTop - paddingBottom;
-            
-            // Berechne die Position des Body-Elements
-            const bodyRect = body.getBoundingClientRect();
-            const pageRect = page.getBoundingClientRect();
-            const bodyTop = bodyRect.top - pageRect.top;
-            const bodyHeight = body.scrollHeight;
-            
-            // Wenn der Body über die Seite hinausgeht
-            const totalContentHeight = bodyTop + bodyHeight;
-            
-            if (totalContentHeight > pageHeight - paddingBottom) {
-                // Hinweis anzeigen, dass der Text auf mehrere Seiten verteilt wird
-                const pageInfo = document.createElement('div');
-                pageInfo.style.cssText = 'text-align: center; padding: 10px; color: #666; font-size: 12px; background: #f0f0f0; margin-top: 10px; border-radius: 4px;';
-                pageInfo.innerHTML = '<i class="bi bi-info-circle"></i> Der Text ist länger als eine Seite. Im PDF-Export werden automatisch Seitenumbrüche eingefügt.';
-                preview.appendChild(pageInfo);
-            }
+        // Folgeseiten
+        let pageNum = 2;
+        while (remainingHeight > 0) {
+            pages.push({ type: 'continuation', pageNum: pageNum });
+            remainingHeight -= continuationPageAvailable;
+            pageNum++;
         }
-    }, 100);
+    }
+    
+    // Seiten rendern
+    pages.forEach((page, index) => {
+        if (page.type === 'first') {
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'pdf-page';
+            pageDiv.innerHTML = `
+                <div class="pdf-sender-block">${senderBlock}</div>
+                <div class="pdf-sender-line">${senderLine}</div>
+                <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
+                <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
+                <div class="pdf-subject">${subject}</div>
+                <div class="pdf-body">${renderedContent}</div>
+                ${pages.length > 1 ? '<div class="pdf-page-number">Seite 1 von ' + pages.length + '</div>' : ''}
+            `;
+            preview.appendChild(pageDiv);
+            
+            // Seitenlabel
+            if (pages.length > 1) {
+                const label = document.createElement('div');
+                label.className = 'pdf-page-label';
+                label.textContent = 'Seite 1 von ' + pages.length;
+                preview.appendChild(label);
+            }
+        } else {
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'pdf-page-continuation';
+            pageDiv.innerHTML = `
+                <div style="color: #999; font-style: italic; margin-bottom: 10mm;">... Fortsetzung</div>
+                <div class="pdf-page-number">Seite ${page.pageNum} von ${pages.length}</div>
+            `;
+            preview.appendChild(pageDiv);
+            
+            // Seitenlabel
+            const label = document.createElement('div');
+            label.className = 'pdf-page-label';
+            label.textContent = `Seite ${page.pageNum} von ${pages.length}`;
+            preview.appendChild(label);
+        }
+    });
 }
 
 function insertPlaceholder(placeholder) {

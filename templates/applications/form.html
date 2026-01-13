@@ -193,79 +193,92 @@
     
     <!-- Vorhandene Dokumente -->
     {% if application.documents %}
-    <div style="margin-bottom: 1.5rem;">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Dateiname</th>
-                    <th>Beschreibung</th>
-                    <th>Größe</th>
-                    <th>Hochgeladen</th>
-                    <th class="text-end">Aktionen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for doc in application.documents %}
-                <tr>
-                    <td>
-                        <i class="bi bi-file-earmark-{% if doc.filename.endswith('.pdf') %}pdf{% elif doc.filename.endswith(('.doc', '.docx')) %}word{% elif doc.filename.endswith(('.png', '.jpg', '.jpeg')) %}image{% else %}text{% endif %}"></i>
-                        {{ doc.filename }}
-                    </td>
-                    <td>{{ doc.description or '-' }}</td>
-                    <td>{{ (doc.file_size / 1024)|round(1) }} KB</td>
-                    <td>{{ doc.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                    <td class="text-end">
-                        <a href="{{ url_for('view_document', document_id=doc.id) }}" 
-                           class="btn btn-sm btn-secondary" target="_blank" title="Ansehen">
-                            <i class="bi bi-eye"></i>
-                        </a>
-                        <a href="{{ url_for('download_document', document_id=doc.id) }}" 
-                           class="btn btn-sm btn-secondary" title="Herunterladen">
-                            <i class="bi bi-download"></i>
-                        </a>
-                        <form action="{{ url_for('delete_document', document_id=doc.id) }}" 
-                              method="POST" style="display: inline;">
-                            {{ form.hidden_tag() }}
-                            <button type="submit" class="btn btn-sm btn-danger" 
-                                    onclick="return confirm('Dokument wirklich löschen?');" title="Löschen">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="documents-list" style="margin-bottom: 1.5rem;">
+        {% for doc in application.documents %}
+        <div class="document-item" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 0.75rem;">
+            <!-- Icon -->
+            <div class="document-icon" style="font-size: 2rem; color: var(--accent-primary); flex-shrink: 0;">
+                {% if doc.filename.endswith('.pdf') %}
+                <i class="bi bi-file-earmark-pdf-fill"></i>
+                {% elif doc.filename.endswith(('.doc', '.docx')) %}
+                <i class="bi bi-file-earmark-word-fill"></i>
+                {% elif doc.filename.endswith(('.png', '.jpg', '.jpeg')) %}
+                <i class="bi bi-file-earmark-image-fill"></i>
+                {% else %}
+                <i class="bi bi-file-earmark-fill"></i>
+                {% endif %}
+            </div>
+            
+            <!-- Info -->
+            <div class="document-info" style="flex: 1; min-width: 0;">
+                <div class="document-name" style="font-weight: 600; color: var(--text-primary); word-break: break-word; margin-bottom: 0.25rem;">
+                    {{ doc.filename }}
+                </div>
+                <div class="document-meta" style="font-size: 0.85rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem;">
+                    {% if doc.description %}
+                    <span><i class="bi bi-tag"></i> {{ doc.description }}</span>
+                    {% endif %}
+                    <span><i class="bi bi-hdd"></i> {{ (doc.file_size / 1024)|round(1) }} KB</span>
+                    <span><i class="bi bi-calendar"></i> {{ doc.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+            </div>
+            
+            <!-- Aktionen -->
+            <div class="document-actions" style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                <a href="{{ url_for('view_document', document_id=doc.id) }}" 
+                   class="btn btn-sm btn-secondary" target="_blank" title="Ansehen">
+                    <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('download_document', document_id=doc.id) }}" 
+                   class="btn btn-sm btn-secondary" title="Herunterladen">
+                    <i class="bi bi-download"></i>
+                </a>
+                <form action="{{ url_for('delete_document', document_id=doc.id) }}" 
+                      method="POST" style="display: inline; margin: 0;">
+                    {{ form.hidden_tag() }}
+                    <button type="submit" class="btn btn-sm btn-danger" 
+                            onclick="return confirm('Dokument wirklich löschen?');" title="Löschen">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
     </div>
     {% else %}
-    <p style="color: var(--text-muted); padding: 1rem 0;">
+    <p style="color: var(--text-muted); padding: 1rem 0; text-align: center;">
+        <i class="bi bi-folder2-open" style="font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: 0.5;"></i>
         Noch keine Dokumente hochgeladen.
     </p>
     {% endif %}
     
     <!-- Upload-Formular -->
-    <form action="{{ url_for('upload_document', application_id=application.id) }}" 
-          method="POST" enctype="multipart/form-data" class="upload-form">
-        {{ form.hidden_tag() }}
-        
-        <div class="form-row" style="align-items: flex-end;">
-            <div class="form-group" style="flex: 2;">
-                <label class="form-label">Dokument hochladen</label>
-                <input type="file" name="document" class="form-control" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" required>
-                <span class="form-hint">Erlaubte Formate: PDF, DOC, DOCX, PNG, JPG (max. 16 MB)</span>
+    <div style="border-top: 1px solid var(--border-color); padding-top: 1.5rem; margin-top: 0.5rem;">
+        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-secondary);">
+            <i class="bi bi-cloud-upload"></i> Neues Dokument hochladen
+        </h3>
+        <form action="{{ url_for('upload_document', application_id=application.id) }}" 
+              method="POST" enctype="multipart/form-data" class="upload-form">
+            {{ form.hidden_tag() }}
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Datei auswählen</label>
+                    <input type="file" name="document" class="form-control" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" required>
+                    <span class="form-hint" style="font-size: 0.75rem;">PDF, DOC, DOCX, PNG, JPG (max. 16 MB)</span>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Beschreibung</label>
+                    <input type="text" name="description" class="form-control" placeholder="z.B. Stellenausschreibung, Lebenslauf...">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <button type="submit" class="btn btn-primary" style="white-space: nowrap;">
+                        <i class="bi bi-upload"></i> Hochladen
+                    </button>
+                </div>
             </div>
-            <div class="form-group" style="flex: 2;">
-                <label class="form-label">Beschreibung (optional)</label>
-                <input type="text" name="description" class="form-control" placeholder="z.B. Stellenausschreibung">
-            </div>
-            <div class="form-group" style="flex: 0;">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-upload"></i>
-                    Hochladen
-                </button>
-            </div>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

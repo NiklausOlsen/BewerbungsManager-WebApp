@@ -348,6 +348,73 @@
         text-align: center;
     }
     
+    /* Margin Settings */
+    .margin-settings {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        background: var(--bg-tertiary);
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    .margin-group {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    
+    .margin-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+    
+    .margin-input {
+        width: 50px;
+        height: 26px;
+        padding: 0 0.35rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-primary);
+        font-size: 0.75rem;
+        text-align: center;
+    }
+    
+    .margin-input:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+    }
+    
+    .margin-unit {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+    
+    .margin-preset-btn {
+        padding: 0.25rem 0.5rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .margin-preset-btn:hover {
+        background: var(--bg-hover);
+        color: var(--text-primary);
+        border-color: var(--accent-primary);
+    }
+    
+    .margin-preset-btn.active {
+        background: rgba(0, 212, 170, 0.15);
+        color: var(--accent-primary);
+        border-color: var(--accent-primary);
+    }
+    
     /* Preview Wrapper for Scrolling */
     .pdf-preview-wrapper {
         max-height: 800px;
@@ -592,6 +659,34 @@
                             </button>
                         </div>
                     </div>
+                    <!-- Margin Settings -->
+                    <div class="margin-settings">
+                        <div class="margin-group">
+                            <span class="margin-label">Oben:</span>
+                            <input type="number" class="margin-input" id="marginTop" value="27" min="10" max="50" onchange="updatePDFPreview()">
+                            <span class="margin-unit">mm</span>
+                        </div>
+                        <div class="margin-group">
+                            <span class="margin-label">Unten:</span>
+                            <input type="number" class="margin-input" id="marginBottom" value="25" min="10" max="50" onchange="updatePDFPreview()">
+                            <span class="margin-unit">mm</span>
+                        </div>
+                        <div class="margin-group">
+                            <span class="margin-label">Links:</span>
+                            <input type="number" class="margin-input" id="marginLeft" value="25" min="10" max="50" onchange="updatePDFPreview()">
+                            <span class="margin-unit">mm</span>
+                        </div>
+                        <div class="margin-group">
+                            <span class="margin-label">Rechts:</span>
+                            <input type="number" class="margin-input" id="marginRight" value="20" min="10" max="50" onchange="updatePDFPreview()">
+                            <span class="margin-unit">mm</span>
+                        </div>
+                        <div class="margin-group" style="margin-left: auto;">
+                            <button class="margin-preset-btn active" onclick="setMarginPreset('din5008')" title="DIN 5008 Standard">DIN 5008</button>
+                            <button class="margin-preset-btn" onclick="setMarginPreset('schmal')" title="Schmale Ränder">Schmal</button>
+                            <button class="margin-preset-btn" onclick="setMarginPreset('breit')" title="Breite Ränder">Breit</button>
+                        </div>
+                    </div>
                     <div class="pdf-preview-wrapper">
                         <div id="pdfPreviewScaler" class="pdf-preview-scaler" style="transform: scale(0.5);">
                             <!-- PDF Pages will be rendered here -->
@@ -686,10 +781,53 @@ const quill = new Quill('#templateEditor', {
 // Preview scale
 let previewScale = 50;
 
+// Margin settings (in mm)
+let pdfMargins = {
+    top: 27,
+    bottom: 25,
+    left: 25,
+    right: 20
+};
+
 function changePreviewScale(delta) {
     previewScale = Math.max(25, Math.min(100, previewScale + delta));
     document.getElementById('scaleValue').textContent = previewScale + '%';
     document.getElementById('pdfPreviewScaler').style.transform = `scale(${previewScale / 100})`;
+}
+
+function setMarginPreset(preset) {
+    // Update active button
+    document.querySelectorAll('.margin-preset-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    switch(preset) {
+        case 'din5008':
+            pdfMargins = { top: 27, bottom: 25, left: 25, right: 20 };
+            break;
+        case 'schmal':
+            pdfMargins = { top: 20, bottom: 20, left: 20, right: 15 };
+            break;
+        case 'breit':
+            pdfMargins = { top: 30, bottom: 30, left: 30, right: 25 };
+            break;
+    }
+    
+    // Update input fields
+    document.getElementById('marginTop').value = pdfMargins.top;
+    document.getElementById('marginBottom').value = pdfMargins.bottom;
+    document.getElementById('marginLeft').value = pdfMargins.left;
+    document.getElementById('marginRight').value = pdfMargins.right;
+    
+    updatePDFPreview();
+}
+
+function getMargins() {
+    return {
+        top: parseInt(document.getElementById('marginTop').value) || 27,
+        bottom: parseInt(document.getElementById('marginBottom').value) || 25,
+        left: parseInt(document.getElementById('marginLeft').value) || 25,
+        right: parseInt(document.getElementById('marginRight').value) || 20
+    };
 }
 
 function switchTab(tab) {
@@ -784,17 +922,18 @@ function updatePDFPreview() {
     const preview = document.getElementById('pdfPreview');
     preview.innerHTML = '';
     
+    // Ränder aus Einstellungen holen
+    const margins = getMargins();
+    
     // Maße (mm zu px: 1mm ≈ 3.7795px bei 96 DPI)
     const mmToPx = 3.7795275591;
     const pageHeight = 297; // mm
     const pageWidth = 210; // mm
     const bodyStartY = 115; // mm - wo der Brieftext beginnt (nach Briefkopf/Betreff)
-    const bottomMargin = 25; // mm
-    const topMarginContinuation = 25; // mm
-    const bodyWidth = 165; // mm
+    const bodyWidth = pageWidth - margins.left - margins.right; // Dynamische Breite
     
-    const firstPageBodyHeight = pageHeight - bodyStartY - bottomMargin; // ~157mm
-    const continuationPageBodyHeight = pageHeight - topMarginContinuation - bottomMargin; // ~247mm
+    const firstPageBodyHeight = pageHeight - bodyStartY - margins.bottom;
+    const continuationPageBodyHeight = pageHeight - margins.top - margins.bottom;
     
     // Temporäres Element zum Messen der Texthöhe
     const measureDiv = document.createElement('div');
@@ -825,9 +964,10 @@ function updatePDFPreview() {
     const page1 = document.createElement('div');
     page1.className = 'pdf-page';
     page1.style.height = `${pageHeight}mm`;
+    page1.style.padding = `${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm`;
     page1.style.overflow = 'hidden';
     page1.innerHTML = `
-        <div class="pdf-sender-block">${senderBlock}</div>
+        <div class="pdf-sender-block" style="top: ${margins.top}mm; right: ${margins.right}mm;">${senderBlock}</div>
         <div class="pdf-sender-line">${senderLine}</div>
         <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
         <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
@@ -851,6 +991,7 @@ function updatePDFPreview() {
         const pageDiv = document.createElement('div');
         pageDiv.className = 'pdf-page-continuation';
         pageDiv.style.height = `${pageHeight}mm`;
+        pageDiv.style.padding = `${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm`;
         pageDiv.style.overflow = 'hidden';
         pageDiv.style.position = 'relative';
         
@@ -858,10 +999,10 @@ function updatePDFPreview() {
         const textContainer = document.createElement('div');
         textContainer.style.cssText = `
             position: absolute;
-            top: ${topMarginContinuation}mm;
-            left: 25mm;
-            right: 20mm;
-            bottom: ${bottomMargin}mm;
+            top: ${margins.top}mm;
+            left: ${margins.left}mm;
+            right: ${margins.right}mm;
+            bottom: ${margins.bottom}mm;
             overflow: hidden;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 11pt;
@@ -880,6 +1021,8 @@ function updatePDFPreview() {
         // Seitenzahl
         const pageNum = document.createElement('div');
         pageNum.className = 'pdf-page-number';
+        pageNum.style.right = `${margins.right}mm`;
+        pageNum.style.bottom = `${Math.max(10, margins.bottom - 10)}mm`;
         pageNum.textContent = `Seite ${p} von ${totalPages}`;
         pageDiv.appendChild(pageNum);
         
@@ -978,6 +1121,7 @@ async function generateText() {
 async function exportPDF() {
     const data = getFormData();
     const htmlContent = getEditorContent();
+    const margins = getMargins();
     
     // Convert HTML to plain text with formatting markers
     const tempDiv = document.createElement('div');
@@ -993,7 +1137,8 @@ async function exportPDF() {
     const pdfData = {
         ...data,
         body_text: bodyText,
-        html_content: htmlContent
+        html_content: htmlContent,
+        margins: margins
     };
     
     // Auto-generate subject if empty

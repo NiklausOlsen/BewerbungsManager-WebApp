@@ -235,9 +235,20 @@ class DINBriefGenerator:
             'date': str,
             'subject': str,
             'body_text': str,  # Plain text (Fallback)
-            'html_content': str  # Optional: HTML-formatierter Text
+            'html_content': str,  # Optional: HTML-formatierter Text
+            'margins': dict  # Optional: {'top': mm, 'bottom': mm, 'left': mm, 'right': mm}
         }
         """
+        # Dynamische Ränder aus data oder Standardwerte
+        margins = data.get('margins', {})
+        self.current_margins = {
+            'top': margins.get('top', 27) * mm,
+            'bottom': margins.get('bottom', 25) * mm,
+            'left': margins.get('left', 25) * mm,
+            'right': margins.get('right', 20) * mm
+        }
+        self.current_text_width = self.PAGE_WIDTH - self.current_margins['left'] - self.current_margins['right']
+        
         buffer = io.BytesIO()
         c = canvas.Canvas(buffer, pagesize=A4)
         
@@ -268,8 +279,8 @@ class DINBriefGenerator:
     
     def _draw_sender_block(self, c, data):
         """Zeichnet den Absender-Block oben rechts"""
-        y = 297 * mm - self.TOP_MARGIN
-        x = self.PAGE_WIDTH - self.RIGHT_MARGIN
+        y = 297 * mm - self.current_margins['top']
+        x = self.PAGE_WIDTH - self.current_margins['right']
         
         c.setFont(self.font_name, self.FONT_SIZE_SENDER)
         
@@ -308,17 +319,17 @@ class DINBriefGenerator:
         if sender_parts:
             sender_line = ' · '.join(sender_parts)
             c.setFont(self.font_name, self.FONT_SIZE_SMALL)
-            c.drawString(self.LEFT_MARGIN, self.SENDER_LINE_Y, sender_line)
+            c.drawString(self.current_margins['left'], self.SENDER_LINE_Y, sender_line)
             
             # Unterstreichung
             c.setLineWidth(0.3)
-            c.line(self.LEFT_MARGIN, self.SENDER_LINE_Y - 2, 
-                   self.LEFT_MARGIN + 85 * mm, self.SENDER_LINE_Y - 2)
+            c.line(self.current_margins['left'], self.SENDER_LINE_Y - 2, 
+                   self.current_margins['left'] + 85 * mm, self.SENDER_LINE_Y - 2)
     
     def _draw_recipient_address(self, c, data):
         """Zeichnet die Empfängeradresse im Anschriftfeld"""
         y = self.ADDRESS_FIELD_TOP - 15  # Etwas Abstand von oben
-        x = self.LEFT_MARGIN
+        x = self.current_margins['left']
         
         c.setFont(self.font_name, self.FONT_SIZE)
         
@@ -365,7 +376,7 @@ class DINBriefGenerator:
         date_location = f"{location}, den {date_str}"
         
         c.setFont(self.font_name, self.FONT_SIZE)
-        c.drawRightString(self.PAGE_WIDTH - self.RIGHT_MARGIN, self.DATE_Y, date_location)
+        c.drawRightString(self.PAGE_WIDTH - self.current_margins['right'], self.DATE_Y, date_location)
     
     def _draw_subject(self, c, data):
         """Zeichnet den Betreff"""
@@ -375,7 +386,7 @@ class DINBriefGenerator:
         
         if subject:
             c.setFont(self.font_name_bold, self.FONT_SIZE)
-            c.drawString(self.LEFT_MARGIN, self.SUBJECT_Y, subject)
+            c.drawString(self.current_margins['left'], self.SUBJECT_Y, subject)
     
     def _draw_rich_body_text(self, c, data):
         """Zeichnet den Brieftext mit Rich-Text-Formatierung"""
@@ -387,7 +398,7 @@ class DINBriefGenerator:
         parsed = self._parse_html_content(html_content)
         
         y = self.TEXT_START_Y
-        x = self.LEFT_MARGIN
+        x = self.current_margins['left']
         
         for block in parsed:
             if block['type'] == 'text':
@@ -396,7 +407,7 @@ class DINBriefGenerator:
                 
                 # Text umbrechen
                 text = block['content']
-                wrapped_lines = self._wrap_text(text, self.TEXT_WIDTH, c, font)
+                wrapped_lines = self._wrap_text(text, self.current_text_width, c, font)
                 
                 for line in wrapped_lines:
                     # Unterstreichung zeichnen falls nötig
@@ -409,10 +420,10 @@ class DINBriefGenerator:
                     y -= self.LINE_HEIGHT
                     
                     # Seitenumbruch wenn nötig
-                    if y < 30 * mm:
+                    if y < self.current_margins['bottom']:
                         c.showPage()
                         c.setFont(font, self.FONT_SIZE)
-                        y = 297 * mm - 25 * mm
+                        y = 297 * mm - self.current_margins['top']
                         
             elif block['type'] == 'paragraph_break':
                 y -= self.PARAGRAPH_SPACING
@@ -431,7 +442,7 @@ class DINBriefGenerator:
                     
                     # Text mit Einrückung
                     text_x = x + self.BULLET_INDENT
-                    text_width = self.TEXT_WIDTH - self.BULLET_INDENT
+                    text_width = self.current_text_width - self.BULLET_INDENT
                     
                     c.setFont(font, self.FONT_SIZE)
                     wrapped_lines = self._wrap_text(item['text'], text_width, c, font)
@@ -446,10 +457,10 @@ class DINBriefGenerator:
                     y -= self.BULLET_SPACING / 2
                     
                     # Seitenumbruch wenn nötig
-                    if y < 30 * mm:
+                    if y < self.current_margins['bottom']:
                         c.showPage()
                         c.setFont(font, self.FONT_SIZE)
-                        y = 297 * mm - 25 * mm
+                        y = 297 * mm - self.current_margins['top']
                 
                 y -= 6  # Abstand nach der Liste
         
@@ -476,7 +487,7 @@ class DINBriefGenerator:
         relevant_lines = lines[text_start_idx:]
         
         y = self.TEXT_START_Y
-        x = self.LEFT_MARGIN
+        x = self.current_margins['left']
         
         c.setFont(self.font_name, self.FONT_SIZE)
         
@@ -515,7 +526,7 @@ class DINBriefGenerator:
                 c.drawString(bullet_x, y, '•')
                 
                 text_x = x + self.BULLET_INDENT
-                text_width = self.TEXT_WIDTH - self.BULLET_INDENT
+                text_width = self.current_text_width - self.BULLET_INDENT
                 
                 if '(' in bullet_text:
                     parts = bullet_text.split('(', 1)
@@ -549,17 +560,17 @@ class DINBriefGenerator:
                 previous_was_bullet = False
                 
                 c.setFont(self.font_name, self.FONT_SIZE)
-                wrapped_lines = self._wrap_text(line, self.TEXT_WIDTH, c)
+                wrapped_lines = self._wrap_text(line, self.current_text_width, c)
                 
                 for wline in wrapped_lines:
                     c.drawString(x, y, wline)
                     y -= self.LINE_HEIGHT
             
             # Seitenumbruch wenn nötig
-            if y < 30 * mm:
+            if y < self.current_margins['bottom']:
                 c.showPage()
                 c.setFont(self.font_name, self.FONT_SIZE)
-                y = 297 * mm - 25 * mm
+                y = 297 * mm - self.current_margins['top']
             
             i += 1
         

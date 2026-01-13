@@ -1300,20 +1300,21 @@ def api_export_pdf():
 @login_required
 def upload_document(application_id):
     """Dokument zu einer Bewerbung hochladen"""
-    application = db.session.get(Application, application_id)
+    # Prüfen ob Bewerbung existiert UND dem aktuellen Benutzer gehört
+    application = Application.query.filter_by(id=application_id, user_id=current_user.id).first()
     if not application:
-        flash('Bewerbung nicht gefunden!', 'error')
+        flash('Bewerbung nicht gefunden oder keine Berechtigung!', 'error')
         return redirect(url_for('applications_list'))
     
     if 'document' not in request.files:
         flash('Keine Datei ausgewählt!', 'error')
-        return redirect(url_for('application_edit', application_id=application_id))
+        return redirect(url_for('application_edit', id=application_id))
     
     file = request.files['document']
     
     if file.filename == '':
         flash('Keine Datei ausgewählt!', 'error')
-        return redirect(url_for('application_edit', application_id=application_id))
+        return redirect(url_for('application_edit', id=application_id))
     
     if file and allowed_file(file.filename):
         # Sicheren Dateinamen erstellen
@@ -1322,8 +1323,13 @@ def upload_document(application_id):
         file_ext = original_filename.rsplit('.', 1)[1].lower()
         stored_filename = f"{uuid.uuid4().hex}.{file_ext}"
         
-        # Datei speichern
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
+        # Benutzer-spezifisches Verzeichnis erstellen
+        user_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], str(current_user.id))
+        if not os.path.exists(user_upload_dir):
+            os.makedirs(user_upload_dir)
+        
+        # Datei im Benutzer-Verzeichnis speichern
+        file_path = os.path.join(user_upload_dir, stored_filename)
         file.save(file_path)
         
         # Dateigröße ermitteln
@@ -1345,7 +1351,7 @@ def upload_document(application_id):
     else:
         flash('Dateityp nicht erlaubt! Erlaubt sind: PDF, DOC, DOCX, PNG, JPG', 'error')
     
-    return redirect(url_for('application_edit', application_id=application_id))
+    return redirect(url_for('application_edit', id=application_id))
 
 
 @app.route('/documents/<int:document_id>')
@@ -1357,7 +1363,18 @@ def download_document(document_id):
         flash('Dokument nicht gefunden!', 'error')
         return redirect(url_for('applications_list'))
     
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.stored_filename)
+    # Prüfen ob Dokument zur Bewerbung des aktuellen Benutzers gehört
+    application = Application.query.filter_by(id=document.application_id, user_id=current_user.id).first()
+    if not application:
+        flash('Keine Berechtigung für dieses Dokument!', 'error')
+        return redirect(url_for('applications_list'))
+    
+    # Datei im Benutzer-Verzeichnis suchen
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], str(current_user.id), document.stored_filename)
+    
+    # Fallback: Alte Dateien im Root-Verzeichnis
+    if not os.path.exists(file_path):
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.stored_filename)
     
     if not os.path.exists(file_path):
         flash('Datei nicht gefunden!', 'error')
@@ -1379,7 +1396,18 @@ def view_document(document_id):
         flash('Dokument nicht gefunden!', 'error')
         return redirect(url_for('applications_list'))
     
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.stored_filename)
+    # Prüfen ob Dokument zur Bewerbung des aktuellen Benutzers gehört
+    application = Application.query.filter_by(id=document.application_id, user_id=current_user.id).first()
+    if not application:
+        flash('Keine Berechtigung für dieses Dokument!', 'error')
+        return redirect(url_for('applications_list'))
+    
+    # Datei im Benutzer-Verzeichnis suchen
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], str(current_user.id), document.stored_filename)
+    
+    # Fallback: Alte Dateien im Root-Verzeichnis
+    if not os.path.exists(file_path):
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.stored_filename)
     
     if not os.path.exists(file_path):
         flash('Datei nicht gefunden!', 'error')
@@ -1401,19 +1429,30 @@ def delete_document(document_id):
         flash('Dokument nicht gefunden!', 'error')
         return redirect(url_for('applications_list'))
     
+    # Prüfen ob Dokument zur Bewerbung des aktuellen Benutzers gehört
+    application = Application.query.filter_by(id=document.application_id, user_id=current_user.id).first()
+    if not application:
+        flash('Keine Berechtigung für dieses Dokument!', 'error')
+        return redirect(url_for('applications_list'))
+    
     application_id = document.application_id
     
-    # Datei vom Dateisystem löschen
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.stored_filename)
+    # Datei vom Dateisystem löschen (Benutzer-Verzeichnis)
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], str(current_user.id), document.stored_filename)
     if os.path.exists(file_path):
         os.remove(file_path)
+    else:
+        # Fallback: Alte Dateien im Root-Verzeichnis
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], document.stored_filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
     
     # Aus Datenbank löschen
     db.session.delete(document)
     db.session.commit()
     
     flash('Dokument erfolgreich gelöscht!', 'success')
-    return redirect(url_for('application_edit', application_id=application_id))
+    return redirect(url_for('application_edit', id=application_id))
 
 
 # ============================================================================

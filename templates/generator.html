@@ -194,11 +194,18 @@
         gap: 0.5rem;
     }
     
+    .pdf-pages-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+    
     .pdf-page {
         background: #fff;
         color: #000;
         width: 210mm;
-        height: 297mm;
+        min-height: 297mm;
         padding: 27mm 20mm 25mm 25mm;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         font-size: 11pt;
@@ -206,9 +213,8 @@
         position: relative;
         transform-origin: top left;
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        margin: 20px auto;
         box-sizing: border-box;
-        overflow: hidden;
+        page-break-after: always;
     }
     
     .pdf-page.scaled {
@@ -274,6 +280,30 @@
         margin-bottom: 0.3em;
     }
     
+    /* Folgeseiten */
+    .pdf-page-continuation {
+        background: #fff;
+        color: #000;
+        width: 210mm;
+        min-height: 297mm;
+        padding: 25mm 20mm 25mm 25mm;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.5;
+        position: relative;
+        transform-origin: top left;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        box-sizing: border-box;
+    }
+    
+    .pdf-page-number {
+        position: absolute;
+        bottom: 15mm;
+        right: 20mm;
+        font-size: 9pt;
+        color: #666;
+    }
+    
     /* Preview Scale Controls */
     .preview-scale-controls {
         display: flex;
@@ -309,12 +339,18 @@
     
     /* Preview Wrapper for Scrolling */
     .pdf-preview-wrapper {
-        max-height: 700px;
+        max-height: 800px;
         overflow: auto;
         background: #d0d0d0;
         padding: 20px;
+    }
+    
+    .pdf-preview-scaler {
+        transform-origin: top center;
         display: flex;
-        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
     }
     
     /* Tab Navigation */
@@ -546,8 +582,10 @@
                         </div>
                     </div>
                     <div class="pdf-preview-wrapper">
-                        <div id="pdfPreview" class="pdf-page" style="transform: scale(0.5); transform-origin: top left;">
-                            <!-- PDF Content will be rendered here -->
+                        <div id="pdfPreviewScaler" class="pdf-preview-scaler" style="transform: scale(0.5);">
+                            <!-- PDF Pages will be rendered here -->
+                            <div id="pdfPreview">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -640,7 +678,7 @@ let previewScale = 50;
 function changePreviewScale(delta) {
     previewScale = Math.max(25, Math.min(100, previewScale + delta));
     document.getElementById('scaleValue').textContent = previewScale + '%';
-    document.getElementById('pdfPreview').style.transform = `scale(${previewScale / 100})`;
+    document.getElementById('pdfPreviewScaler').style.transform = `scale(${previewScale / 100})`;
 }
 
 function switchTab(tab) {
@@ -731,16 +769,53 @@ function updatePDFPreview() {
     // Subject (Betreff)
     const subject = data.subject || (data.job_title ? `Bewerbung als ${data.job_title}` : 'Bewerbung');
     
-    // Render PDF preview - DIN 5008 Layout
+    // Render PDF preview - DIN 5008 Layout mit automatischem Seitenumbruch
     const preview = document.getElementById('pdfPreview');
-    preview.innerHTML = `
-        <div class="pdf-sender-block">${senderBlock}</div>
-        <div class="pdf-sender-line">${senderLine}</div>
-        <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
-        <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
-        <div class="pdf-subject">${subject}</div>
-        <div class="pdf-body">${renderedContent}</div>
+    
+    // Erste Seite mit Briefkopf
+    const firstPageContent = `
+        <div class="pdf-page">
+            <div class="pdf-sender-block">${senderBlock}</div>
+            <div class="pdf-sender-line">${senderLine}</div>
+            <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
+            <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
+            <div class="pdf-subject">${subject}</div>
+            <div class="pdf-body">${renderedContent}</div>
+        </div>
     `;
+    
+    preview.innerHTML = firstPageContent;
+    
+    // Prüfen ob der Inhalt überläuft und Folgeseiten benötigt werden
+    setTimeout(() => {
+        const page = preview.querySelector('.pdf-page');
+        const body = preview.querySelector('.pdf-body');
+        
+        if (page && body) {
+            // A4 Höhe in Pixel (bei 96 DPI: 297mm ≈ 1123px)
+            const pageHeight = 297 * 3.7795275591; // mm to px
+            const paddingTop = 27 * 3.7795275591;
+            const paddingBottom = 25 * 3.7795275591;
+            const availableHeight = pageHeight - paddingTop - paddingBottom;
+            
+            // Berechne die Position des Body-Elements
+            const bodyRect = body.getBoundingClientRect();
+            const pageRect = page.getBoundingClientRect();
+            const bodyTop = bodyRect.top - pageRect.top;
+            const bodyHeight = body.scrollHeight;
+            
+            // Wenn der Body über die Seite hinausgeht
+            const totalContentHeight = bodyTop + bodyHeight;
+            
+            if (totalContentHeight > pageHeight - paddingBottom) {
+                // Hinweis anzeigen, dass der Text auf mehrere Seiten verteilt wird
+                const pageInfo = document.createElement('div');
+                pageInfo.style.cssText = 'text-align: center; padding: 10px; color: #666; font-size: 12px; background: #f0f0f0; margin-top: 10px; border-radius: 4px;';
+                pageInfo.innerHTML = '<i class="bi bi-info-circle"></i> Der Text ist länger als eine Seite. Im PDF-Export werden automatisch Seitenumbrüche eingefügt.';
+                preview.appendChild(pageInfo);
+            }
+        }
+    }, 100);
 }
 
 function insertPlaceholder(placeholder) {

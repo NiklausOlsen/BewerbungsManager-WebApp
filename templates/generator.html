@@ -784,12 +784,24 @@ function updatePDFPreview() {
     const preview = document.getElementById('pdfPreview');
     preview.innerHTML = '';
     
+    // Maße (mm zu px: 1mm ≈ 3.7795px bei 96 DPI)
+    const mmToPx = 3.7795275591;
+    const pageHeight = 297; // mm
+    const pageWidth = 210; // mm
+    const bodyStartY = 115; // mm - wo der Brieftext beginnt (nach Briefkopf/Betreff)
+    const bottomMargin = 25; // mm
+    const topMarginContinuation = 25; // mm
+    const bodyWidth = 165; // mm
+    
+    const firstPageBodyHeight = pageHeight - bodyStartY - bottomMargin; // ~157mm
+    const continuationPageBodyHeight = pageHeight - topMarginContinuation - bottomMargin; // ~247mm
+    
     // Temporäres Element zum Messen der Texthöhe
     const measureDiv = document.createElement('div');
     measureDiv.style.cssText = `
         position: absolute;
         visibility: hidden;
-        width: 165mm;
+        width: ${bodyWidth}mm;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         font-size: 11pt;
         line-height: 1.6;
@@ -798,80 +810,87 @@ function updatePDFPreview() {
     measureDiv.innerHTML = renderedContent;
     document.body.appendChild(measureDiv);
     
-    // Höhen berechnen (mm zu px: 1mm ≈ 3.7795px bei 96 DPI)
-    const mmToPx = 3.7795275591;
-    const pageHeightPx = 297 * mmToPx;
-    const firstPageTopMargin = 115 * mmToPx; // Briefkopf + Betreff
-    const firstPageBottomMargin = 25 * mmToPx;
-    const continuationTopMargin = 25 * mmToPx;
-    const continuationBottomMargin = 25 * mmToPx;
-    
-    const firstPageAvailable = pageHeightPx - firstPageTopMargin - firstPageBottomMargin;
-    const continuationPageAvailable = pageHeightPx - continuationTopMargin - continuationBottomMargin;
-    
-    // Text in Absätze aufteilen
-    const contentHeight = measureDiv.scrollHeight;
+    const contentHeightPx = measureDiv.scrollHeight;
+    const contentHeightMm = contentHeightPx / mmToPx;
     document.body.removeChild(measureDiv);
     
-    // Berechne Anzahl der Seiten
-    let remainingHeight = contentHeight;
-    let pages = [];
-    
-    // Erste Seite
-    if (remainingHeight <= firstPageAvailable) {
-        pages.push({ type: 'first', content: renderedContent });
-    } else {
-        pages.push({ type: 'first', content: renderedContent, overflow: true });
-        remainingHeight -= firstPageAvailable;
-        
-        // Folgeseiten
-        let pageNum = 2;
-        while (remainingHeight > 0) {
-            pages.push({ type: 'continuation', pageNum: pageNum });
-            remainingHeight -= continuationPageAvailable;
-            pageNum++;
-        }
+    // Berechne benötigte Seiten
+    let totalPages = 1;
+    if (contentHeightMm > firstPageBodyHeight) {
+        const overflowMm = contentHeightMm - firstPageBodyHeight;
+        totalPages = 1 + Math.ceil(overflowMm / continuationPageBodyHeight);
     }
     
-    // Seiten rendern
-    pages.forEach((page, index) => {
-        if (page.type === 'first') {
-            const pageDiv = document.createElement('div');
-            pageDiv.className = 'pdf-page';
-            pageDiv.innerHTML = `
-                <div class="pdf-sender-block">${senderBlock}</div>
-                <div class="pdf-sender-line">${senderLine}</div>
-                <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
-                <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
-                <div class="pdf-subject">${subject}</div>
-                <div class="pdf-body">${renderedContent}</div>
-                ${pages.length > 1 ? '<div class="pdf-page-number">Seite 1 von ' + pages.length + '</div>' : ''}
-            `;
-            preview.appendChild(pageDiv);
-            
-            // Seitenlabel
-            if (pages.length > 1) {
-                const label = document.createElement('div');
-                label.className = 'pdf-page-label';
-                label.textContent = 'Seite 1 von ' + pages.length;
-                preview.appendChild(label);
-            }
-        } else {
-            const pageDiv = document.createElement('div');
-            pageDiv.className = 'pdf-page-continuation';
-            pageDiv.innerHTML = `
-                <div style="color: #999; font-style: italic; margin-bottom: 10mm;">... Fortsetzung</div>
-                <div class="pdf-page-number">Seite ${page.pageNum} von ${pages.length}</div>
-            `;
-            preview.appendChild(pageDiv);
-            
-            // Seitenlabel
-            const label = document.createElement('div');
-            label.className = 'pdf-page-label';
-            label.textContent = `Seite ${page.pageNum} von ${pages.length}`;
-            preview.appendChild(label);
-        }
-    });
+    // Seite 1 rendern
+    const page1 = document.createElement('div');
+    page1.className = 'pdf-page';
+    page1.style.height = `${pageHeight}mm`;
+    page1.style.overflow = 'hidden';
+    page1.innerHTML = `
+        <div class="pdf-sender-block">${senderBlock}</div>
+        <div class="pdf-sender-line">${senderLine}</div>
+        <div class="pdf-recipient">${recipient || '<div style="color:#999">[Empfänger]</div>'}</div>
+        <div class="pdf-date">${location}, den ${dateStr || new Date().toLocaleDateString('de-DE')}</div>
+        <div class="pdf-subject">${subject}</div>
+        <div class="pdf-body">${renderedContent}</div>
+        ${totalPages > 1 ? `<div class="pdf-page-number">Seite 1 von ${totalPages}</div>` : ''}
+    `;
+    preview.appendChild(page1);
+    
+    if (totalPages > 1) {
+        const label1 = document.createElement('div');
+        label1.className = 'pdf-page-label';
+        label1.textContent = `Seite 1 von ${totalPages}`;
+        preview.appendChild(label1);
+    }
+    
+    // Folgeseiten rendern
+    for (let p = 2; p <= totalPages; p++) {
+        const offsetMm = firstPageBodyHeight + (p - 2) * continuationPageBodyHeight;
+        
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'pdf-page-continuation';
+        pageDiv.style.height = `${pageHeight}mm`;
+        pageDiv.style.overflow = 'hidden';
+        pageDiv.style.position = 'relative';
+        
+        // Container für den verschobenen Text
+        const textContainer = document.createElement('div');
+        textContainer.style.cssText = `
+            position: absolute;
+            top: ${topMarginContinuation}mm;
+            left: 25mm;
+            right: 20mm;
+            bottom: ${bottomMargin}mm;
+            overflow: hidden;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            text-align: justify;
+        `;
+        
+        // Innerer Container mit negativem Offset
+        const innerContainer = document.createElement('div');
+        innerContainer.style.cssText = `margin-top: -${offsetMm}mm;`;
+        innerContainer.innerHTML = renderedContent;
+        
+        textContainer.appendChild(innerContainer);
+        pageDiv.appendChild(textContainer);
+        
+        // Seitenzahl
+        const pageNum = document.createElement('div');
+        pageNum.className = 'pdf-page-number';
+        pageNum.textContent = `Seite ${p} von ${totalPages}`;
+        pageDiv.appendChild(pageNum);
+        
+        preview.appendChild(pageDiv);
+        
+        // Seitenlabel
+        const label = document.createElement('div');
+        label.className = 'pdf-page-label';
+        label.textContent = `Seite ${p} von ${totalPages}`;
+        preview.appendChild(label);
+    }
 }
 
 function insertPlaceholder(placeholder) {

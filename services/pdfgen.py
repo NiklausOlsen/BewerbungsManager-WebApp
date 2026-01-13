@@ -29,6 +29,7 @@ class HTMLToTextConverter(HTMLParser):
         self.list_type = None  # 'ul' oder 'ol'
         self.list_items = []
         self.list_counter = 0
+        self.last_was_block = False
         
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
@@ -52,11 +53,15 @@ class HTMLToTextConverter(HTMLParser):
         elif tag == 'li':
             self.current_text = ""
         elif tag == 'br':
-            self.current_text += '\n'
+            # BR innerhalb von Text = Zeilenumbruch
+            self._flush_text()
+            self.result.append({'type': 'line_break'})
         elif tag == 'p':
             self._flush_text()
+            self.last_was_block = True
         elif tag == 'div':
             self._flush_text()
+            self.last_was_block = True
             
     def handle_endtag(self, tag):
         tag = tag.lower()
@@ -89,11 +94,22 @@ class HTMLToTextConverter(HTMLParser):
         elif tag == 'p':
             self._flush_text()
             self.result.append({'type': 'paragraph_break'})
+            self.last_was_block = True
         elif tag == 'div':
             self._flush_text()
+            # Nur Absatzumbruch wenn nicht direkt nach einem anderen Block
+            if not self.last_was_block:
+                self.result.append({'type': 'paragraph_break'})
+            self.last_was_block = True
             
     def handle_data(self, data):
-        self.current_text += data
+        # Whitespace normalisieren aber nicht komplett entfernen
+        normalized = ' '.join(data.split())
+        if normalized:
+            if self.current_text and not self.current_text.endswith(' ') and not normalized.startswith(' '):
+                self.current_text += ' '
+            self.current_text += normalized
+            self.last_was_block = False
         
     def _flush_text(self):
         if self.current_text.strip():
@@ -106,7 +122,18 @@ class HTMLToTextConverter(HTMLParser):
         
     def get_result(self):
         self._flush_text()
-        return self.result
+        # Entferne aufeinanderfolgende paragraph_breaks
+        cleaned = []
+        prev_was_break = False
+        for item in self.result:
+            if item['type'] == 'paragraph_break':
+                if not prev_was_break:
+                    cleaned.append(item)
+                prev_was_break = True
+            else:
+                cleaned.append(item)
+                prev_was_break = False
+        return cleaned
 
 
 class DINBriefGenerator:
@@ -427,6 +454,9 @@ class DINBriefGenerator:
                         
             elif block['type'] == 'paragraph_break':
                 y -= self.PARAGRAPH_SPACING
+                
+            elif block['type'] == 'line_break':
+                y -= self.LINE_HEIGHT
                 
             elif block['type'] == 'list':
                 y -= 6  # Abstand vor der Liste

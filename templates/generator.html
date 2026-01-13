@@ -990,12 +990,15 @@ function updatePDFPreview() {
         
         const pageDiv = document.createElement('div');
         pageDiv.className = 'pdf-page-continuation';
-        pageDiv.style.height = `${pageHeight}mm`;
-        pageDiv.style.padding = `${margins.top}mm ${margins.right}mm ${margins.bottom}mm ${margins.left}mm`;
-        pageDiv.style.overflow = 'hidden';
-        pageDiv.style.position = 'relative';
+        pageDiv.style.cssText = `
+            height: ${pageHeight}mm;
+            overflow: hidden;
+            position: relative;
+            background: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        `;
         
-        // Container für den verschobenen Text
+        // Container für den verschobenen Text (ohne padding, nur absolute Positionierung)
         const textContainer = document.createElement('div');
         textContainer.style.cssText = `
             position: absolute;
@@ -1021,8 +1024,13 @@ function updatePDFPreview() {
         // Seitenzahl
         const pageNum = document.createElement('div');
         pageNum.className = 'pdf-page-number';
-        pageNum.style.right = `${margins.right}mm`;
-        pageNum.style.bottom = `${Math.max(10, margins.bottom - 10)}mm`;
+        pageNum.style.cssText = `
+            position: absolute;
+            right: ${margins.right}mm;
+            bottom: ${Math.max(10, margins.bottom - 10)}mm;
+            font-size: 9pt;
+            color: #666;
+        `;
         pageNum.textContent = `Seite ${p} von ${totalPages}`;
         pageDiv.appendChild(pageNum);
         

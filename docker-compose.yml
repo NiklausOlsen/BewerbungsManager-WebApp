@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  bewerbungsmanager:
+    build: .
+    container_name: bewerbungsmanager
+    restart: always
+    ports:
+      - "5001:5000"
+    volumes:
+      - ./instance:/app/instance
+      - ./uploads:/app/uploads
+    environment:
+      - SECRET_KEY=dein_super_geheimer_schluessel_hier
+      - DATABASE_URL=sqlite:///instance/bewerbungen.db
